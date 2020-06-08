@@ -85,7 +85,7 @@ func (s *Sink) Close() error {
 // TODO: this needs to be a background function
 // Recv ...
 func (s *Sink) recv() error {
-	var msgChan = make(chan string, 10000)
+	var msgChan = make(chan []byte, 10000)
 
 	go func() {
 		for {
@@ -93,7 +93,7 @@ func (s *Sink) recv() error {
 
 			var m, err = s.b.Remove()
 			if err != nil {
-				fmt.Println("continue", err)
+				// fmt.Println("continue", err)
 				continue
 			}
 
@@ -101,6 +101,8 @@ func (s *Sink) recv() error {
 		}
 	}()
 
+	// TODO: change this to use a future and return a channel on Recieve
+	// have Sync and Async
 	var workChan = make(chan struct{}, 100)
 
 	for {

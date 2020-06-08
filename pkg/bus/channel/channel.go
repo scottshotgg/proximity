@@ -19,10 +19,9 @@ type (
 	// Channel ...
 	Channel struct {
 		closed bool
-		q      chan string
-
-		mut  *sync.RWMutex
-		once sync.Once
+		q      chan []byte
+		mut    *sync.RWMutex
+		once   sync.Once
 	}
 )
 
@@ -43,7 +42,7 @@ func (c *Channel) Close() error {
 }
 
 // Insert ...
-func (c *Channel) Insert(msg string) error {
+func (c *Channel) Insert(msg []byte) error {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
@@ -62,12 +61,12 @@ func (c *Channel) Insert(msg string) error {
 }
 
 // Remove ...
-func (c *Channel) Remove() (string, error) {
+func (c *Channel) Remove() ([]byte, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
 	if c.closed {
-		return "", errClosed
+		return nil, errClosed
 	}
 
 	select {
@@ -76,14 +75,14 @@ func (c *Channel) Remove() (string, error) {
 
 	default:
 		// Still need to analyze when this edge case could ever be hit
-		return "", errRecieve
+		return nil, errRecieve
 	}
 }
 
 // New ...
 func New(size int) bus.Bus {
 	return &Channel{
-		q:   make(chan string, size),
+		q:   make(chan []byte, size),
 		mut: &sync.RWMutex{},
 	}
 }

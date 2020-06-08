@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto;
+
+import "listener.proto";
+
+message OpenReq {}
+message OpenRes {}
+
+message CloseReq {}
+message CloseRes {}
+
+message RecvReq {
+  Message msg = 1;
+}
+message RecvRes {}
+
+service Recv {
+  rpc Open(OpenReq) returns (OpenRes) {};
+  rpc Close(CloseReq) returns (CloseRes) {};
+
+  rpc Recv(RecvReq) returns (RecvRes) {};
+}

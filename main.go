@@ -1,16 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
-	"time"
 
 	bus "github.com/scottshotgg/proximity/pkg/bus/channel"
-	"github.com/scottshotgg/proximity/pkg/listener"
 	"github.com/scottshotgg/proximity/pkg/listener/echo"
 	recv "github.com/scottshotgg/proximity/pkg/receiver/channel"
+	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
+	sender "github.com/scottshotgg/proximity/pkg/sender/grpc"
 )
 
 // func main() {
@@ -43,8 +41,8 @@ func main() {
 		// msg string
 		// err error
 
-		c       = bus.New(100)
-		r       = recv.New(c)
+		b       = bus.New(100)
+		r       = recv.New(b)
 		route1  = "ur_mom"
 		route2  = "ur_dad"
 		l1, err = echo.New(route1)
@@ -72,44 +70,44 @@ func main() {
 	fmt.Println("listener1 ID:", l1.ID())
 	fmt.Println("listener2 ID:", l2.ID())
 
-	for i := 0; i < 1000; i++ {
-		var (
-			contents = strconv.Itoa(i)
-			msg      = listener.Msg{
-				Route:    route1,
-				Contents: contents,
-			}
-		)
-
-		if i%2 == 0 {
-			msg.Route = route2
-		}
-
-		if i%5 == 0 {
-			msg.Route = recv.RouteAll
-		}
-
-		var blob, err = json.Marshal(&msg)
-		if err != nil {
-			log.Fatalln("err marshaling:", err)
-		}
-
-		err = c.Insert(string(blob))
-		if err != nil {
-			log.Fatalln("err:", err)
-		}
-
-		fmt.Println("inserted into:", string(blob))
-		// // }
-
-		// msg, err = c.Remove()
-		// if err != nil {
-		// 	log.Fatalln("err:", err)
-
-		time.Sleep(200 * time.Millisecond)
+	err = sender.New(5001, channel_sender.New(b))
+	if err != nil {
+		log.Fatalln("err created sender:", err)
 	}
 
-	fmt.Println("done")
+	// for i := 0; i < 1000; i++ {
+	// 	var (
+	// 		contents = strconv.Itoa(i)
+	// 		msg      = listener.Msg{
+	// 			Route:    route1,
+	// 			Contents: contents,
+	// 		}
+	// 	)
 
-	// log.Println("msg:", msg)
+	// 	if i%2 == 0 {
+	// 		msg.Route = route2
+	// 	}
+
+	// 	if i%5 == 0 {
+	// 		msg.Route = recv.RouteAll
+	// 	}
+
+	// 	err = s.Send(&msg)
+	// 	if err != nil {
+	// 		log.Fatalln("err:", err)
+	// 	}
+
+	// 	fmt.Printf("inserted into: %+v\n", msg)
+	// 	// // }
+
+	// 	// msg, err = c.Remove()
+	// 	// if err != nil {
+	// 	// 	log.Fatalln("err:", err)
+
+	// 	time.Sleep(200 * time.Millisecond)
+	// }
+
+	// fmt.Println("done")
+
+	// // log.Println("msg:", msg)
 }
