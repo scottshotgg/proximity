@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/scottshotgg/proximity/pkg/bus/channel"
+	"github.com/scottshotgg/proximity/pkg/listener"
+	"github.com/scottshotgg/proximity/pkg/listener/echo"
 	reciever "github.com/scottshotgg/proximity/pkg/receiver"
 )
 
@@ -41,27 +43,53 @@ func main() {
 		// msg string
 		// err error
 
-		c          = channel.New(100)
-		r          = reciever.New(c)
-		route      = "ur_mom"
-		lisID, err = r.Attach(route)
+		c       = channel.New(100)
+		r       = reciever.New(c)
+		route1  = "ur_mom"
+		route2  = "ur_dad"
+		l1, err = echo.New(route1)
 	)
 
+	if err != nil {
+		log.Fatalln("err creating new echo listener", err)
+	}
+
+	err = r.Attach(l1)
 	if err != nil {
 		log.Fatalln("err attaching", err)
 	}
 
-	fmt.Println("listenerID:", lisID)
+	l2, err := echo.New(route2)
+	if err != nil {
+		log.Fatalln("err attaching", err)
+	}
+
+	err = r.Attach(l2)
+	if err != nil {
+		log.Fatalln("err attaching", err)
+	}
+
+	fmt.Println("listener1 ID:", l1.ID())
+	fmt.Println("listener2 ID:", l2.ID())
 
 	for i := 0; i < 1000; i++ {
 		var (
-			contents  = strconv.Itoa(i)
-			blob, err = json.Marshal(&reciever.Msg{
-				Route:    route,
+			contents = strconv.Itoa(i)
+			msg      = listener.Msg{
+				Route:    route1,
 				Contents: contents,
-			})
+			}
 		)
 
+		if i%2 == 0 {
+			msg.Route = route2
+		}
+
+		if i%5 == 0 {
+			msg.Route = reciever.RouteAll
+		}
+
+		var blob, err = json.Marshal(&msg)
 		if err != nil {
 			log.Fatalln("err marshaling:", err)
 		}

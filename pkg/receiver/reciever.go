@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/scottshotgg/proximity/pkg/bus"
+	"github.com/scottshotgg/proximity/pkg/listener"
 )
 
 const (
@@ -30,21 +30,15 @@ type (
 		Open() error
 		Close() error
 
-		Attach(route string) (string, error)
+		Attach(lis listener.Listener) error
 	}
 
 	// Sink ...
 	Sink struct {
 		closed    bool
 		mut       *sync.RWMutex
-		listeners map[string][]*Listener
+		listeners map[string][]listener.Listener
 		b         bus.Bus
-	}
-
-	Msg struct {
-		// TODO: Think of something better later
-		Route    string
-		Contents string
 	}
 )
 
@@ -59,7 +53,7 @@ type (
 func New(b bus.Bus) Reciever {
 	var s = Sink{
 		mut:       &sync.RWMutex{},
-		listeners: map[string][]*Listener{},
+		listeners: map[string][]listener.Listener{},
 		b:         b,
 	}
 
@@ -103,18 +97,14 @@ func (s *Sink) recv() error {
 	go func() {
 		for {
 			time.Sleep(500 * time.Millisecond)
-			fmt.Println("waiting for msg ...")
+
 			var m, err = s.b.Remove()
 			if err != nil {
 				fmt.Println("continue", err)
 				continue
 			}
 
-			fmt.Println("got msg", m)
-
 			msgChan <- m
-
-			fmt.Println("passed msg")
 		}
 	}()
 
@@ -140,7 +130,7 @@ func (s *Sink) recv() error {
 
 			// Put all below into another worker func or something
 
-			var msg Msg
+			var msg listener.Msg
 
 			select {
 			case m := <-msgChan:
@@ -159,7 +149,7 @@ func (s *Sink) recv() error {
 
 			switch msg.Route {
 			case RouteAll:
-				go func(m *Msg) {
+				go func(m *listener.Msg) {
 					log.Println("broadcast")
 					var err = s.broadcast(m)
 					if err != nil {
@@ -180,8 +170,8 @@ func (s *Sink) recv() error {
 				}
 
 				for _, l := range listeners {
-					go func(l *Listener) {
-						var err = l.Send(msg.Contents)
+					go func(l listener.Listener) {
+						var err = l.Handle(&msg)
 						if err != nil {
 							// TODO: do something here... maybe internally queue?
 						}
@@ -192,23 +182,34 @@ func (s *Sink) recv() error {
 	}
 }
 
-func (s *Sink) broadcast(msg *Msg) error {
-	return errors.New("broadbase is not implemented")
+func (s *Sink) broadcast(msg *listener.Msg) error {
+	// Range over every route ...
+	for _, route := range s.listeners {
+		go func(route []listener.Listener) {
+			// For each listener on that route ...
+			for _, lis := range route {
+				go func(l listener.Listener) {
+					var err = l.Handle(msg)
+					if err != nil {
+						log.Fatalln("err handling", err)
+					}
+				}(lis)
+			}
+		}(route)
+	}
+
+	// return errors.New("broadcast is not implemented")
+	return nil
 }
 
-func (s *Sink) Attach(route string) (string, error) {
+// Attach adds a listener to the reciever
+func (s *Sink) Attach(lis listener.Listener) error {
 	// TODO: need to have a mutex specifically for this
 
-	var id, err = uuid.NewRandom()
-	if err != nil {
-		return "", nil
-	}
-
-	var idString = id.String()
-	var lis = &Listener{
-		id:    idString,
-		route: route,
-	}
+	var (
+		id    = lis.ID()
+		route = lis.Route()
+	)
 
 	// TODO: need to check this route
 	var r, _ = s.listeners[route]
@@ -223,7 +224,7 @@ func (s *Sink) Attach(route string) (string, error) {
 
 	s.listeners[route] = append(r, lis)
 
-	fmt.Printf("Attached listener, ID:%s\n", idString)
+	fmt.Printf("Attached listener, ID:%s\n", id)
 
-	return idString, nil
+	return nil
 }
