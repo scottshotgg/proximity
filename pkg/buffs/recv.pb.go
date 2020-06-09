@@ -148,110 +148,132 @@ func (m *CloseRes) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CloseRes proto.InternalMessageInfo
 
-type RecvReq struct {
-	Msg                  *Message `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+type AttachReq struct {
+	// id is a requested ID only; no gaurantee
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// route is a requested route; the server can kick it back
+	Route                string   `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RecvReq) Reset()         { *m = RecvReq{} }
-func (m *RecvReq) String() string { return proto.CompactTextString(m) }
-func (*RecvReq) ProtoMessage()    {}
-func (*RecvReq) Descriptor() ([]byte, []int) {
+func (m *AttachReq) Reset()         { *m = AttachReq{} }
+func (m *AttachReq) String() string { return proto.CompactTextString(m) }
+func (*AttachReq) ProtoMessage()    {}
+func (*AttachReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_490983b71ca20843, []int{4}
 }
 
-func (m *RecvReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RecvReq.Unmarshal(m, b)
+func (m *AttachReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AttachReq.Unmarshal(m, b)
 }
-func (m *RecvReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RecvReq.Marshal(b, m, deterministic)
+func (m *AttachReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AttachReq.Marshal(b, m, deterministic)
 }
-func (m *RecvReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RecvReq.Merge(m, src)
+func (m *AttachReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttachReq.Merge(m, src)
 }
-func (m *RecvReq) XXX_Size() int {
-	return xxx_messageInfo_RecvReq.Size(m)
+func (m *AttachReq) XXX_Size() int {
+	return xxx_messageInfo_AttachReq.Size(m)
 }
-func (m *RecvReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_RecvReq.DiscardUnknown(m)
+func (m *AttachReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttachReq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RecvReq proto.InternalMessageInfo
+var xxx_messageInfo_AttachReq proto.InternalMessageInfo
 
-func (m *RecvReq) GetMsg() *Message {
+func (m *AttachReq) GetId() string {
 	if m != nil {
-		return m.Msg
+		return m.Id
 	}
-	return nil
+	return ""
 }
 
-type RecvRes struct {
+func (m *AttachReq) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+type AttachRes struct {
+	Message              *Message `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RecvRes) Reset()         { *m = RecvRes{} }
-func (m *RecvRes) String() string { return proto.CompactTextString(m) }
-func (*RecvRes) ProtoMessage()    {}
-func (*RecvRes) Descriptor() ([]byte, []int) {
+func (m *AttachRes) Reset()         { *m = AttachRes{} }
+func (m *AttachRes) String() string { return proto.CompactTextString(m) }
+func (*AttachRes) ProtoMessage()    {}
+func (*AttachRes) Descriptor() ([]byte, []int) {
 	return fileDescriptor_490983b71ca20843, []int{5}
 }
 
-func (m *RecvRes) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RecvRes.Unmarshal(m, b)
+func (m *AttachRes) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AttachRes.Unmarshal(m, b)
 }
-func (m *RecvRes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RecvRes.Marshal(b, m, deterministic)
+func (m *AttachRes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AttachRes.Marshal(b, m, deterministic)
 }
-func (m *RecvRes) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RecvRes.Merge(m, src)
+func (m *AttachRes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttachRes.Merge(m, src)
 }
-func (m *RecvRes) XXX_Size() int {
-	return xxx_messageInfo_RecvRes.Size(m)
+func (m *AttachRes) XXX_Size() int {
+	return xxx_messageInfo_AttachRes.Size(m)
 }
-func (m *RecvRes) XXX_DiscardUnknown() {
-	xxx_messageInfo_RecvRes.DiscardUnknown(m)
+func (m *AttachRes) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttachRes.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RecvRes proto.InternalMessageInfo
+var xxx_messageInfo_AttachRes proto.InternalMessageInfo
+
+func (m *AttachRes) GetMessage() *Message {
+	if m != nil {
+		return m.Message
+	}
+	return nil
+}
 
 func init() {
 	proto.RegisterType((*OpenReq)(nil), "proto.OpenReq")
 	proto.RegisterType((*OpenRes)(nil), "proto.OpenRes")
 	proto.RegisterType((*CloseReq)(nil), "proto.CloseReq")
 	proto.RegisterType((*CloseRes)(nil), "proto.CloseRes")
-	proto.RegisterType((*RecvReq)(nil), "proto.RecvReq")
-	proto.RegisterType((*RecvRes)(nil), "proto.RecvRes")
+	proto.RegisterType((*AttachReq)(nil), "proto.AttachReq")
+	proto.RegisterType((*AttachRes)(nil), "proto.AttachRes")
 }
 
-func init() { proto.RegisterFile("recv.proto", fileDescriptor_490983b71ca20843) }
+func init() {
+	proto.RegisterFile("recv.proto", fileDescriptor_490983b71ca20843)
+}
 
 var fileDescriptor_490983b71ca20843 = []byte{
-	// 182 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2a, 0x4a, 0x4d, 0x2e,
-	0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x52, 0x7c, 0x39, 0x99, 0xc5, 0x25,
-	0xa9, 0x79, 0xa9, 0x45, 0x10, 0x61, 0x25, 0x4e, 0x2e, 0x76, 0xff, 0x82, 0xd4, 0xbc, 0xa0, 0xd4,
-	0x42, 0x04, 0xb3, 0x58, 0x89, 0x8b, 0x8b, 0xc3, 0x39, 0x27, 0xbf, 0x38, 0x15, 0x24, 0x8c, 0x60,
-	0x17, 0x2b, 0x69, 0x73, 0xb1, 0x07, 0xa5, 0x26, 0x97, 0x05, 0xa5, 0x16, 0x0a, 0x29, 0x70, 0x31,
-	0xe7, 0x16, 0xa7, 0x4b, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x1b, 0xf1, 0x41, 0x4c, 0xd3, 0xf3, 0x4d,
-	0x2d, 0x2e, 0x4e, 0x4c, 0x4f, 0x0d, 0x02, 0x49, 0x81, 0xcc, 0x83, 0x28, 0x2e, 0x36, 0x6a, 0x67,
-	0xe4, 0x62, 0x01, 0xb1, 0x85, 0x34, 0xb8, 0x58, 0x40, 0x76, 0x08, 0xc1, 0x34, 0x40, 0xed, 0x96,
-	0x42, 0xe5, 0x17, 0x2b, 0x31, 0x08, 0x69, 0x73, 0xb1, 0x82, 0xad, 0x15, 0xe2, 0x87, 0x4a, 0xc1,
-	0x1c, 0x24, 0x85, 0x26, 0x00, 0x52, 0xac, 0x01, 0x35, 0x1e, 0x66, 0x0c, 0xd4, 0x91, 0x52, 0xa8,
-	0xfc, 0x62, 0x25, 0x86, 0x24, 0x36, 0xb0, 0x80, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xe6, 0xad,
-	0xec, 0xae, 0x1b, 0x01, 0x00, 0x00,
+	// 217 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x8f, 0xc1, 0x4a, 0xc4, 0x40,
+	0x0c, 0x86, 0x77, 0xca, 0x76, 0xd7, 0x46, 0xa8, 0x12, 0x3c, 0x2c, 0x73, 0x92, 0x39, 0x15, 0x84,
+	0xa5, 0x56, 0x7c, 0x00, 0xf1, 0x2c, 0xc2, 0xbc, 0x41, 0x6d, 0x83, 0x16, 0x6a, 0xa7, 0x9d, 0x8c,
+	0x7d, 0x0d, 0x5f, 0x59, 0x3a, 0xd3, 0x5a, 0xb6, 0xa7, 0x24, 0xdf, 0x9f, 0xc0, 0x17, 0x00, 0x4b,
+	0xd5, 0x78, 0xee, 0xad, 0x71, 0x06, 0x63, 0x5f, 0x64, 0xda, 0x36, 0xec, 0xa8, 0x23, 0x1b, 0xb0,
+	0x4a, 0xe0, 0xf8, 0xde, 0x53, 0xa7, 0x69, 0x58, 0x5b, 0x56, 0x00, 0x57, 0xaf, 0xad, 0x61, 0x9a,
+	0xf0, 0xda, 0xb3, 0x7a, 0x84, 0xe4, 0xc5, 0xb9, 0xb2, 0xfa, 0xd2, 0x34, 0x60, 0x0a, 0x51, 0x53,
+	0x9f, 0xc4, 0xbd, 0xc8, 0x12, 0x1d, 0x35, 0x35, 0xde, 0x41, 0x6c, 0xcd, 0x8f, 0xa3, 0x53, 0xe4,
+	0x51, 0x18, 0xd4, 0xf3, 0x7a, 0xc2, 0x98, 0xc1, 0xf1, 0x9b, 0x98, 0xcb, 0x4f, 0xf2, 0x77, 0xd7,
+	0x45, 0x1a, 0x34, 0xce, 0x6f, 0x81, 0xea, 0x25, 0x2e, 0x7e, 0x05, 0xec, 0x35, 0x55, 0x23, 0x66,
+	0xb0, 0x9f, 0xac, 0x70, 0xd9, 0x9c, 0x6d, 0xe5, 0xe5, 0xcc, 0x6a, 0x87, 0x0f, 0x10, 0x7b, 0x51,
+	0xbc, 0x99, 0xa3, 0xe5, 0x05, 0xb9, 0x01, 0xd3, 0x72, 0x0e, 0x87, 0xa0, 0x85, 0xb7, 0x73, 0xf8,
+	0xff, 0x98, 0xdc, 0x12, 0x56, 0xbb, 0x5c, 0x7c, 0x1c, 0x3c, 0x7c, 0xfa, 0x0b, 0x00, 0x00, 0xff,
+	0xff, 0x3d, 0x47, 0xa7, 0x13, 0x55, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConn
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
 // RecvClient is the client API for Recv service.
 //
@@ -259,14 +281,14 @@ const _ = grpc.SupportPackageIsVersion4
 type RecvClient interface {
 	Open(ctx context.Context, in *OpenReq, opts ...grpc.CallOption) (*OpenRes, error)
 	Close(ctx context.Context, in *CloseReq, opts ...grpc.CallOption) (*CloseRes, error)
-	Recv(ctx context.Context, in *RecvReq, opts ...grpc.CallOption) (*RecvRes, error)
+	Attach(ctx context.Context, in *AttachReq, opts ...grpc.CallOption) (Recv_AttachClient, error)
 }
 
 type recvClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewRecvClient(cc *grpc.ClientConn) RecvClient {
+func NewRecvClient(cc grpc.ClientConnInterface) RecvClient {
 	return &recvClient{cc}
 }
 
@@ -288,20 +310,43 @@ func (c *recvClient) Close(ctx context.Context, in *CloseReq, opts ...grpc.CallO
 	return out, nil
 }
 
-func (c *recvClient) Recv(ctx context.Context, in *RecvReq, opts ...grpc.CallOption) (*RecvRes, error) {
-	out := new(RecvRes)
-	err := c.cc.Invoke(ctx, "/proto.Recv/Recv", in, out, opts...)
+func (c *recvClient) Attach(ctx context.Context, in *AttachReq, opts ...grpc.CallOption) (Recv_AttachClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Recv_serviceDesc.Streams[0], "/proto.Recv/Attach", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &recvAttachClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Recv_AttachClient interface {
+	Recv() (*AttachRes, error)
+	grpc.ClientStream
+}
+
+type recvAttachClient struct {
+	grpc.ClientStream
+}
+
+func (x *recvAttachClient) Recv() (*AttachRes, error) {
+	m := new(AttachRes)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // RecvServer is the server API for Recv service.
 type RecvServer interface {
 	Open(context.Context, *OpenReq) (*OpenRes, error)
 	Close(context.Context, *CloseReq) (*CloseRes, error)
-	Recv(context.Context, *RecvReq) (*RecvRes, error)
+	Attach(*AttachReq, Recv_AttachServer) error
 }
 
 // UnimplementedRecvServer can be embedded to have forward compatible implementations.
@@ -314,8 +359,8 @@ func (*UnimplementedRecvServer) Open(ctx context.Context, req *OpenReq) (*OpenRe
 func (*UnimplementedRecvServer) Close(ctx context.Context, req *CloseReq) (*CloseRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
 }
-func (*UnimplementedRecvServer) Recv(ctx context.Context, req *RecvReq) (*RecvRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Recv not implemented")
+func (*UnimplementedRecvServer) Attach(req *AttachReq, srv Recv_AttachServer) error {
+	return status.Errorf(codes.Unimplemented, "method Attach not implemented")
 }
 
 func RegisterRecvServer(s *grpc.Server, srv RecvServer) {
@@ -358,22 +403,25 @@ func _Recv_Close_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Recv_Recv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecvReq)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Recv_Attach_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AttachReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(RecvServer).Recv(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.Recv/Recv",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RecvServer).Recv(ctx, req.(*RecvReq))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(RecvServer).Attach(m, &recvAttachServer{stream})
+}
+
+type Recv_AttachServer interface {
+	Send(*AttachRes) error
+	grpc.ServerStream
+}
+
+type recvAttachServer struct {
+	grpc.ServerStream
+}
+
+func (x *recvAttachServer) Send(m *AttachRes) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 var _Recv_serviceDesc = grpc.ServiceDesc{
@@ -388,11 +436,13 @@ var _Recv_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Close",
 			Handler:    _Recv_Close_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Recv",
-			Handler:    _Recv_Recv_Handler,
+			StreamName:    "Attach",
+			Handler:       _Recv_Attach_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "recv.proto",
 }

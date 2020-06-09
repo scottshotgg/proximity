@@ -1,14 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
-	bus "github.com/scottshotgg/proximity/pkg/bus/channel"
-	"github.com/scottshotgg/proximity/pkg/listener/echo"
-	recv "github.com/scottshotgg/proximity/pkg/receiver/channel"
+	"github.com/paulbellamy/ratecounter"
+	buffs "github.com/scottshotgg/proximity/pkg/buffs"
+	bus "github.com/scottshotgg/proximity/pkg/bus"
+	channel_bus "github.com/scottshotgg/proximity/pkg/bus/channel"
+	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
+	grpc_recv "github.com/scottshotgg/proximity/pkg/recv/grpc"
 	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
-	sender "github.com/scottshotgg/proximity/pkg/sender/grpc"
+	grpc_sender "github.com/scottshotgg/proximity/pkg/sender/grpc"
+	"google.golang.org/grpc"
 )
 
 // func main() {
@@ -38,76 +45,113 @@ import (
 
 func main() {
 	var (
-		// msg string
-		// err error
+		// route1 = "ur_mom"
+		// route2 = "ur_dad"
 
-		b       = bus.New(100)
-		r       = recv.New(b)
-		route1  = "ur_mom"
-		route2  = "ur_dad"
-		l1, err = echo.New(route1)
+		b = channel_bus.New(100)
 	)
 
+	go servers(b)
+
+	time.Sleep(1 * time.Second)
+
+	var recvConn, err = grpc.Dial(":5002", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalln("err creating new echo listener", err)
+		log.Fatalln("err recvConn:", err)
 	}
 
-	err = r.Attach(l1)
+	sendConn, err := grpc.Dial(":5001", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalln("err attaching", err)
+		log.Fatalln("err sendConn:", err)
 	}
 
-	l2, err := echo.New(route2)
+	var (
+		sendClient = buffs.NewSenderClient(sendConn)
+		recvClient = buffs.NewRecvClient(recvConn)
+		ctx        = context.Background()
+	)
+
+	listener, err := recvClient.Attach(ctx, &buffs.AttachReq{
+		Id:    "1",
+		Route: "a",
+	})
+
 	if err != nil {
-		log.Fatalln("err attaching", err)
+		log.Fatalln("err making listener:", err)
 	}
 
-	err = r.Attach(l2)
+	go send(sendClient)
+
+	recv(listener)
+}
+
+func recv(listener buffs.Recv_AttachClient) {
+	md, err := listener.Header()
 	if err != nil {
-		log.Fatalln("err attaching", err)
+		log.Fatalln("err getting header values:", err)
 	}
 
-	fmt.Println("listener1 ID:", l1.ID())
-	fmt.Println("listener2 ID:", l2.ID())
+	fmt.Println("metadata:", md)
 
-	err = sender.New(5001, channel_sender.New(b))
-	if err != nil {
-		log.Fatalln("err created sender:", err)
+	var counter = ratecounter.NewRateCounter(1 * time.Second)
+
+	var timer = time.NewTimer(1 * time.Second)
+
+	for {
+		select {
+		case <-timer.C:
+			fmt.Println("Rate:", counter.Rate())
+			timer.Reset(1 * time.Second)
+
+		default:
+		}
+
+		_, err = listener.Recv()
+		if err != nil {
+			log.Fatalln("err listening:", err)
+		}
+
+		counter.Incr(1)
 	}
+}
 
-	// for i := 0; i < 1000; i++ {
-	// 	var (
-	// 		contents = strconv.Itoa(i)
-	// 		msg      = listener.Msg{
-	// 			Route:    route1,
-	// 			Contents: contents,
-	// 		}
-	// 	)
+func send(sendClient buffs.SenderClient) {
+	var (
+		i   int
+		ctx = context.Background()
+		err error
+	)
 
-	// 	if i%2 == 0 {
-	// 		msg.Route = route2
-	// 	}
+	for {
+		_, err = sendClient.Send(ctx, &buffs.SendReq{
+			Msg: &buffs.Message{
+				Route:    "a",
+				Contents: "else:::::::" + strconv.Itoa(i),
+			},
+		})
 
-	// 	if i%5 == 0 {
-	// 		msg.Route = recv.RouteAll
-	// 	}
+		if err != nil {
+			log.Fatalln("err sending:", err)
+		}
 
-	// 	err = s.Send(&msg)
-	// 	if err != nil {
-	// 		log.Fatalln("err:", err)
-	// 	}
+		i++
 
-	// 	fmt.Printf("inserted into: %+v\n", msg)
-	// 	// // }
+		// time.Sleep(50 * time.Millisecond)
+	}
+}
 
-	// 	// msg, err = c.Remove()
-	// 	// if err != nil {
-	// 	// 	log.Fatalln("err:", err)
+func servers(b bus.Bus) {
+	go func() {
+		var err = grpc_recv.New(5002, channel_recv.New(b))
+		if err != nil {
+			log.Fatalln("err creating recv", err)
+		}
+	}()
 
-	// 	time.Sleep(200 * time.Millisecond)
-	// }
-
-	// fmt.Println("done")
-
-	// // log.Println("msg:", msg)
+	go func() {
+		var err = grpc_sender.New(5001, channel_sender.New(b))
+		if err != nil {
+			log.Fatalln("err created sender:", err)
+		}
+	}()
 }

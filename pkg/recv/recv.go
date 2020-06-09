@@ -1,12 +1,12 @@
-package reciever
+package recv
 
 import (
 	"github.com/scottshotgg/proximity/pkg/listener"
 )
 
 type (
-	// Reciever ...
-	Reciever interface {
+	// Recv ...
+	Recv interface {
 		Open() error
 		Close() error
 

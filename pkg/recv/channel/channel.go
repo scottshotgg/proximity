@@ -10,7 +10,7 @@ import (
 
 	"github.com/scottshotgg/proximity/pkg/bus"
 	"github.com/scottshotgg/proximity/pkg/listener"
-	reciever "github.com/scottshotgg/proximity/pkg/receiver"
+	"github.com/scottshotgg/proximity/pkg/recv"
 )
 
 const (
@@ -43,7 +43,7 @@ type (
 // }
 
 // New ...
-func New(b bus.Bus) reciever.Reciever {
+func New(b bus.Bus) recv.Recv {
 	var s = Sink{
 		mut:       &sync.RWMutex{},
 		listeners: map[string][]listener.Listener{},
@@ -89,7 +89,7 @@ func (s *Sink) recv() error {
 
 	go func() {
 		for {
-			time.Sleep(500 * time.Millisecond)
+			// time.Sleep(500 * time.Millisecond)
 
 			var m, err = s.b.Remove()
 			if err != nil {
@@ -103,7 +103,7 @@ func (s *Sink) recv() error {
 
 	// TODO: change this to use a future and return a channel on Recieve
 	// have Sync and Async
-	var workChan = make(chan struct{}, 100)
+	var workChan = make(chan struct{}, 10000)
 
 	for {
 		s.mut.Lock()

@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strconv"
 
@@ -27,7 +26,7 @@ func New(port int, ch sender.Sender) error {
 			ch: ch,
 		}
 
-		l, err = net.Listen("tcp", "localhost:"+strconv.Itoa(port))
+		l, err = net.Listen("tcp", ":"+strconv.Itoa(port))
 	)
 
 	if err != nil {
@@ -55,12 +54,11 @@ func (s *Server) Close(ctx context.Context, req *buffs.CloseReq) (*buffs.CloseRe
 }
 
 func (s *Server) Send(ctx context.Context, req *buffs.SendReq) (*buffs.SendRes, error) {
-	fmt.Printf("sending msg: %+v\n", req.GetMsg())
-
 	var err = s.ch.Send(&listener.Msg{
 		Route:    req.GetMsg().GetRoute(),
 		Contents: req.GetMsg().GetContents(),
 	})
+
 	if err != nil {
 		return nil, err
 	}

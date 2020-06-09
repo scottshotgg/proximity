@@ -99,7 +99,9 @@ func init() {
 	proto.RegisterType((*SendRes)(nil), "proto.SendRes")
 }
 
-func init() { proto.RegisterFile("sender.proto", fileDescriptor_dec65ed00f2bd807) }
+func init() {
+	proto.RegisterFile("sender.proto", fileDescriptor_dec65ed00f2bd807)
+}
 
 var fileDescriptor_dec65ed00f2bd807 = []byte{
 	// 174 bytes of a gzipped FileDescriptorProto
@@ -118,11 +120,11 @@ var fileDescriptor_dec65ed00f2bd807 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConn
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
 // SenderClient is the client API for Sender service.
 //
@@ -134,10 +136,10 @@ type SenderClient interface {
 }
 
 type senderClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewSenderClient(cc *grpc.ClientConn) SenderClient {
+func NewSenderClient(cc grpc.ClientConnInterface) SenderClient {
 	return &senderClient{cc}
 }
 

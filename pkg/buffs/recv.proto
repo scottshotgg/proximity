@@ -10,14 +10,21 @@ message OpenRes {}
 message CloseReq {}
 message CloseRes {}
 
-message RecvReq {
-  Message msg = 1;
+message AttachReq {
+  // id is a requested ID only; no gaurantee
+  string id = 1;
+
+  // route is a requested route; the server can kick it back
+  string route = 2;
 }
-message RecvRes {}
+
+message AttachRes {
+  Message message = 1;
+}
 
 service Recv {
   rpc Open(OpenReq) returns (OpenRes) {};
   rpc Close(CloseReq) returns (CloseRes) {};
 
-  rpc Recv(RecvReq) returns (RecvRes) {};
+  rpc Attach(AttachReq) returns (stream AttachRes) {};
 }
