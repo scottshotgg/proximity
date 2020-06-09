@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/scottshotgg/proximity/pkg/bus/channel"
+	bus "github.com/scottshotgg/proximity/pkg/bus/channel"
 	"github.com/scottshotgg/proximity/pkg/listener"
 	"github.com/scottshotgg/proximity/pkg/listener/echo"
-	reciever "github.com/scottshotgg/proximity/pkg/receiver"
+	recv "github.com/scottshotgg/proximity/pkg/receiver/channel"
 )
 
 // func main() {
@@ -43,8 +43,8 @@ func main() {
 		// msg string
 		// err error
 
-		c       = channel.New(100)
-		r       = reciever.New(c)
+		c       = bus.New(100)
+		r       = recv.New(c)
 		route1  = "ur_mom"
 		route2  = "ur_dad"
 		l1, err = echo.New(route1)
@@ -86,7 +86,7 @@ func main() {
 		}
 
 		if i%5 == 0 {
-			msg.Route = reciever.RouteAll
+			msg.Route = recv.RouteAll
 		}
 
 		var blob, err = json.Marshal(&msg)
