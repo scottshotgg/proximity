@@ -48,7 +48,7 @@ func main() {
 		// route1 = "ur_mom"
 		// route2 = "ur_dad"
 
-		b = channel_bus.New(100)
+		b = channel_bus.New(100000)
 	)
 
 	go servers(b)
@@ -68,11 +68,34 @@ func main() {
 	var (
 		sendClient = buffs.NewSenderClient(sendConn)
 		recvClient = buffs.NewRecvClient(recvConn)
-		ctx        = context.Background()
 	)
 
-	listener, err := recvClient.Attach(ctx, &buffs.AttachReq{
-		Id:    "1",
+	// go send(0, sendClient)
+
+	var max = 10
+
+	for i := 0; i < max; i++ {
+		for j := 0; j < 100; j++ {
+			fmt.Println("sender")
+			go send(j+(i*100), sendClient)
+		}
+
+		go recv(i, recvClient)
+	}
+
+	for j := 0; j < 100; j++ {
+		fmt.Println("sender")
+		go send(j+(max*100), sendClient)
+	}
+
+	recv(max, recvClient)
+}
+
+func recv(id int, recvClient buffs.RecvClient) {
+	var ctx = context.Background()
+
+	var listener, err = recvClient.Attach(ctx, &buffs.AttachReq{
+		Id:    strconv.Itoa(id),
 		Route: "a",
 	})
 
@@ -80,12 +103,6 @@ func main() {
 		log.Fatalln("err making listener:", err)
 	}
 
-	go send(sendClient)
-
-	recv(listener)
-}
-
-func recv(listener buffs.Recv_AttachClient) {
 	md, err := listener.Header()
 	if err != nil {
 		log.Fatalln("err getting header values:", err)
@@ -97,47 +114,65 @@ func recv(listener buffs.Recv_AttachClient) {
 
 	var timer = time.NewTimer(1 * time.Second)
 
+	go func() {
+		for {
+			var _, err = listener.Recv()
+			if err != nil {
+				log.Fatalln("err", err)
+			}
+
+			counter.Incr(1)
+		}
+	}()
+
 	for {
 		select {
 		case <-timer.C:
-			fmt.Println("Rate:", counter.Rate())
+			fmt.Printf("Rate for %d: %d\n", id, counter.Rate())
 			timer.Reset(1 * time.Second)
-
-		default:
 		}
-
-		_, err = listener.Recv()
-		if err != nil {
-			log.Fatalln("err listening:", err)
-		}
-
-		counter.Incr(1)
 	}
 }
 
-func send(sendClient buffs.SenderClient) {
+func send(id int, sendClient buffs.SenderClient) {
 	var (
 		i   int
 		ctx = context.Background()
 		err error
 	)
 
-	for {
-		_, err = sendClient.Send(ctx, &buffs.SendReq{
-			Msg: &buffs.Message{
-				Route:    "a",
-				Contents: "else:::::::" + strconv.Itoa(i),
-			},
-		})
+	var counter = ratecounter.NewRateCounter(1 * time.Second)
 
-		if err != nil {
-			log.Fatalln("err sending:", err)
+	var timer = time.NewTimer(1 * time.Second)
+
+	go func() {
+		for {
+			_, err = sendClient.Send(ctx, &buffs.SendReq{
+				Msg: &buffs.Message{
+					Route:    "a",
+					Contents: "else:::::::" + strconv.Itoa(i),
+				},
+			})
+
+			if err != nil {
+				log.Fatalln("err sending:", err)
+			}
+
+			i++
+			counter.Incr(1)
+
+			// time.Sleep(50 * time.Millisecond)
 		}
+	}()
 
-		i++
-
-		// time.Sleep(50 * time.Millisecond)
+	for {
+		select {
+		case <-timer.C:
+			// fmt.Printf("Send rate for %d: %d\n", id, counter.Rate())
+			timer.Reset(1 * time.Second)
+		}
 	}
+
 }
 
 func servers(b bus.Bus) {

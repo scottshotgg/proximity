@@ -85,7 +85,7 @@ func (s *Sink) Close() error {
 // TODO: this needs to be a background function
 // Recv ...
 func (s *Sink) recv() error {
-	var msgChan = make(chan []byte, 10000)
+	var msgChan = make(chan []byte, 200000)
 
 	go func() {
 		for {
@@ -103,7 +103,7 @@ func (s *Sink) recv() error {
 
 	// TODO: change this to use a future and return a channel on Recieve
 	// have Sync and Async
-	var workChan = make(chan struct{}, 10000)
+	var workChan = make(chan struct{}, 10)
 
 	for {
 		s.mut.Lock()
