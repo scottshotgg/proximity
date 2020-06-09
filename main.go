@@ -137,20 +137,20 @@ func recv(id int, recvClient buffs.RecvClient) {
 func send(id int, sendClient buffs.SenderClient) {
 	var (
 		i   int
-		ctx = context.Background()
 		err error
+
+		ctx         = context.Background()
+		everySecond = 1 * time.Second
+		counter     = ratecounter.NewRateCounter(everySecond)
+		timer       = time.NewTimer(everySecond)
 	)
-
-	var counter = ratecounter.NewRateCounter(1 * time.Second)
-
-	var timer = time.NewTimer(1 * time.Second)
 
 	go func() {
 		for {
 			_, err = sendClient.Send(ctx, &buffs.SendReq{
 				Msg: &buffs.Message{
 					Route:    "a",
-					Contents: "else:::::::" + strconv.Itoa(i),
+					Contents: "",
 				},
 			})
 
@@ -169,24 +169,23 @@ func send(id int, sendClient buffs.SenderClient) {
 		select {
 		case <-timer.C:
 			// fmt.Printf("Send rate for %d: %d\n", id, counter.Rate())
-			timer.Reset(1 * time.Second)
+			timer.Reset(everySecond)
 		}
 	}
-
 }
 
 func servers(b bus.Bus) {
 	go func() {
-		var err = grpc_recv.New(5002, channel_recv.New(b))
+		var err = grpc_sender.New(5001, channel_sender.New(b))
 		if err != nil {
-			log.Fatalln("err creating recv", err)
+			log.Fatalln("err created sender:", err)
 		}
 	}()
 
 	go func() {
-		var err = grpc_sender.New(5001, channel_sender.New(b))
+		var err = grpc_recv.New(5002, channel_recv.New(b))
 		if err != nil {
-			log.Fatalln("err created sender:", err)
+			log.Fatalln("err creating recv", err)
 		}
 	}()
 }

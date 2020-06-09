@@ -1,11 +1,9 @@
 package channel
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/bus"
-	"github.com/scottshotgg/proximity/pkg/listener"
 	"github.com/scottshotgg/proximity/pkg/sender"
 )
 
@@ -46,13 +44,6 @@ func (s *Source) Close() error {
 	return nil
 }
 
-func (s *Source) Send(msg *listener.Msg) error {
-	// TODO: check route
-
-	var blob, err = json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	return s.b.Insert(blob)
+func (s *Source) Send(msg []byte) error {
+	return s.b.Insert(msg)
 }

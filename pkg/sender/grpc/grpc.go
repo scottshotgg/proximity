@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"strconv"
 
@@ -54,11 +55,15 @@ func (s *Server) Close(ctx context.Context, req *buffs.CloseReq) (*buffs.CloseRe
 }
 
 func (s *Server) Send(ctx context.Context, req *buffs.SendReq) (*buffs.SendRes, error) {
-	var err = s.ch.Send(&listener.Msg{
+	var blob, err = json.Marshal(&listener.Msg{
 		Route:    req.GetMsg().GetRoute(),
 		Contents: req.GetMsg().GetContents(),
 	})
+	if err != nil {
+		return nil, err
+	}
 
+	err = s.ch.Send(blob)
 	if err != nil {
 		return nil, err
 	}
