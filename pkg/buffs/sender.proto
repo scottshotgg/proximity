@@ -15,5 +15,5 @@ service Sender {
   rpc Open(OpenReq) returns (OpenRes) {};
   rpc Close(CloseReq) returns (CloseRes) {};
 
-  rpc Send(SendReq) returns (SendRes) {};
+  rpc Send(stream SendReq) returns (SendRes) {};
 }

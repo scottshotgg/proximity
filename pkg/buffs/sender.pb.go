@@ -104,18 +104,18 @@ func init() {
 }
 
 var fileDescriptor_dec65ed00f2bd807 = []byte{
-	// 174 bytes of a gzipped FileDescriptorProto
+	// 176 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x29, 0x4e, 0xcd, 0x4b,
 	0x49, 0x2d, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53, 0x52, 0x7c, 0x39, 0x99,
 	0xc5, 0x25, 0xa9, 0x79, 0x30, 0x61, 0x29, 0xae, 0xa2, 0xd4, 0xe4, 0x32, 0x08, 0x5b, 0x49, 0x9b,
 	0x8b, 0x3d, 0x38, 0x35, 0x2f, 0x25, 0x28, 0xb5, 0x50, 0x48, 0x81, 0x8b, 0x39, 0xb7, 0x38, 0x5d,
 	0x82, 0x51, 0x81, 0x51, 0x83, 0xdb, 0x88, 0x0f, 0x22, 0xaf, 0xe7, 0x9b, 0x5a, 0x5c, 0x9c, 0x98,
-	0x9e, 0x1a, 0x04, 0x92, 0x52, 0xe2, 0x84, 0x29, 0x2e, 0x36, 0xea, 0x64, 0xe4, 0x62, 0x0b, 0x06,
+	0x9e, 0x1a, 0x04, 0x92, 0x52, 0xe2, 0x84, 0x29, 0x2e, 0x36, 0xea, 0x66, 0xe4, 0x62, 0x0b, 0x06,
 	0xdb, 0x25, 0xa4, 0xc1, 0xc5, 0xe2, 0x5f, 0x90, 0x9a, 0x27, 0x04, 0xd3, 0x02, 0xe2, 0x04, 0xa5,
 	0x16, 0x4a, 0xa1, 0xf2, 0x8b, 0x95, 0x18, 0x84, 0xb4, 0xb9, 0x58, 0x9d, 0x73, 0xf2, 0x8b, 0x53,
-	0x85, 0xf8, 0xa1, 0x52, 0x60, 0x1e, 0x48, 0x2d, 0x9a, 0x00, 0x48, 0xb1, 0x06, 0x17, 0x0b, 0xc8,
-	0x02, 0xb8, 0xb1, 0x50, 0x67, 0x4a, 0xa1, 0xf2, 0x8b, 0x95, 0x18, 0x92, 0xd8, 0xc0, 0x02, 0xc6,
-	0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7d, 0xa7, 0x04, 0xb9, 0xfd, 0x00, 0x00, 0x00,
+	0x85, 0xf8, 0xa1, 0x52, 0x60, 0x1e, 0x48, 0x2d, 0x9a, 0x00, 0x48, 0xb1, 0x16, 0x17, 0x0b, 0xc8,
+	0x02, 0xb8, 0xb1, 0x50, 0x67, 0x4a, 0xa1, 0xf2, 0x8b, 0x95, 0x18, 0x34, 0x18, 0x93, 0xd8, 0xc0,
+	0x42, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x0b, 0xdb, 0x47, 0x63, 0xff, 0x00, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -132,7 +132,7 @@ const _ = grpc.SupportPackageIsVersion6
 type SenderClient interface {
 	Open(ctx context.Context, in *OpenReq, opts ...grpc.CallOption) (*OpenRes, error)
 	Close(ctx context.Context, in *CloseReq, opts ...grpc.CallOption) (*CloseRes, error)
-	Send(ctx context.Context, in *SendReq, opts ...grpc.CallOption) (*SendRes, error)
+	Send(ctx context.Context, opts ...grpc.CallOption) (Sender_SendClient, error)
 }
 
 type senderClient struct {
@@ -161,20 +161,45 @@ func (c *senderClient) Close(ctx context.Context, in *CloseReq, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *senderClient) Send(ctx context.Context, in *SendReq, opts ...grpc.CallOption) (*SendRes, error) {
-	out := new(SendRes)
-	err := c.cc.Invoke(ctx, "/proto.Sender/Send", in, out, opts...)
+func (c *senderClient) Send(ctx context.Context, opts ...grpc.CallOption) (Sender_SendClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Sender_serviceDesc.Streams[0], "/proto.Sender/Send", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &senderSendClient{stream}
+	return x, nil
+}
+
+type Sender_SendClient interface {
+	Send(*SendReq) error
+	CloseAndRecv() (*SendRes, error)
+	grpc.ClientStream
+}
+
+type senderSendClient struct {
+	grpc.ClientStream
+}
+
+func (x *senderSendClient) Send(m *SendReq) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *senderSendClient) CloseAndRecv() (*SendRes, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(SendRes)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // SenderServer is the server API for Sender service.
 type SenderServer interface {
 	Open(context.Context, *OpenReq) (*OpenRes, error)
 	Close(context.Context, *CloseReq) (*CloseRes, error)
-	Send(context.Context, *SendReq) (*SendRes, error)
+	Send(Sender_SendServer) error
 }
 
 // UnimplementedSenderServer can be embedded to have forward compatible implementations.
@@ -187,8 +212,8 @@ func (*UnimplementedSenderServer) Open(ctx context.Context, req *OpenReq) (*Open
 func (*UnimplementedSenderServer) Close(ctx context.Context, req *CloseReq) (*CloseRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
 }
-func (*UnimplementedSenderServer) Send(ctx context.Context, req *SendReq) (*SendRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
+func (*UnimplementedSenderServer) Send(srv Sender_SendServer) error {
+	return status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 
 func RegisterSenderServer(s *grpc.Server, srv SenderServer) {
@@ -231,22 +256,30 @@ func _Sender_Close_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sender_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SendReq)
-	if err := dec(in); err != nil {
+func _Sender_Send_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SenderServer).Send(&senderSendServer{stream})
+}
+
+type Sender_SendServer interface {
+	SendAndClose(*SendRes) error
+	Recv() (*SendReq, error)
+	grpc.ServerStream
+}
+
+type senderSendServer struct {
+	grpc.ServerStream
+}
+
+func (x *senderSendServer) SendAndClose(m *SendRes) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *senderSendServer) Recv() (*SendReq, error) {
+	m := new(SendReq)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(SenderServer).Send(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.Sender/Send",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SenderServer).Send(ctx, req.(*SendReq))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 var _Sender_serviceDesc = grpc.ServiceDesc{
@@ -261,11 +294,13 @@ var _Sender_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Close",
 			Handler:    _Sender_Close_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Send",
-			Handler:    _Sender_Send_Handler,
+			StreamName:    "Send",
+			Handler:       _Sender_Send_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "sender.proto",
 }

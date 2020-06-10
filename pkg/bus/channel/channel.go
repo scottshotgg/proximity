@@ -28,11 +28,13 @@ type (
 // Close ...
 func (c *Channel) Close() error {
 	c.mut.Lock()
-	defer c.mut.Unlock()
 
 	if c.closed {
+		c.mut.Unlock()
 		return errClosed
 	}
+
+	c.mut.Unlock()
 
 	c.once.Do(func() {
 		close(c.q)
@@ -43,12 +45,14 @@ func (c *Channel) Close() error {
 
 // Insert ...
 func (c *Channel) Insert(msg []byte) error {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	// c.mut.Lock()
 
 	if c.closed {
+		// c.mut.Unlock()
 		return errClosed
 	}
+
+	// c.mut.Unlock()
 
 	select {
 	case c.q <- msg:
@@ -62,20 +66,22 @@ func (c *Channel) Insert(msg []byte) error {
 
 // Remove ...
 func (c *Channel) Remove() ([]byte, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.mut.RLock()
 
 	if c.closed {
+		c.mut.RUnlock()
 		return nil, errClosed
 	}
+
+	c.mut.RUnlock()
 
 	select {
 	case msg := <-c.q:
 		return msg, nil
 
-	default:
-		// Still need to analyze when this edge case could ever be hit
-		return nil, errRecieve
+		// default:
+		// 	// Still need to analyze when this edge case could ever be hit
+		// 	return nil, errRecieve
 	}
 }
 

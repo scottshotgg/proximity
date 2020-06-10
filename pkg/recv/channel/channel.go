@@ -85,7 +85,7 @@ func (s *Sink) Close() error {
 // TODO: this needs to be a background function
 // Recv ...
 func (s *Sink) recv() error {
-	var msgChan = make(chan []byte, 200000)
+	var msgChan = make(chan []byte, 2000000)
 
 	go func() {
 		for {
@@ -93,7 +93,7 @@ func (s *Sink) recv() error {
 
 			var m, err = s.b.Remove()
 			if err != nil {
-				// fmt.Println("continue", err)
+				// log.Fatalln("err removing:", err)
 				continue
 			}
 

@@ -60,7 +60,7 @@ func (s *Server) Close(ctx context.Context, req *buffs.CloseReq) (*buffs.CloseRe
 func (s *Server) Attach(req *buffs.AttachReq, srv buffs.Recv_AttachServer) error {
 	fmt.Printf("attach request: %+v\n", req)
 
-	var msgChan = make(chan *buffs.Message, 100000)
+	var msgChan = make(chan *buffs.Message, 1000000)
 
 	var lis, err = generic.New(req.GetId(), req.GetRoute(), func(msg *listener.Msg) error {
 		// return srv.Send(&buffs.AttachRes{

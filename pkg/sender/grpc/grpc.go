@@ -54,19 +54,43 @@ func (s *Server) Close(ctx context.Context, req *buffs.CloseReq) (*buffs.CloseRe
 	return nil, errNotImplemented
 }
 
-func (s *Server) Send(ctx context.Context, req *buffs.SendReq) (*buffs.SendRes, error) {
-	var blob, err = json.Marshal(&listener.Msg{
-		Route:    req.GetMsg().GetRoute(),
-		Contents: req.GetMsg().GetContents(),
-	})
-	if err != nil {
-		return nil, err
-	}
+func (s *Server) Send(srv buffs.Sender_SendServer) error {
+	for {
+		var req, err = srv.Recv()
+		if err != nil {
+			return err
+		}
 
-	err = s.ch.Send(blob)
-	if err != nil {
-		return nil, err
-	}
+		// []bytes(req.String())
 
-	return &buffs.SendRes{}, nil
+		blob, err := json.Marshal(&listener.Msg{
+			Route:    req.GetMsg().GetRoute(),
+			Contents: req.GetMsg().GetContents(),
+		})
+		if err != nil {
+			return err
+		}
+
+		err = s.ch.Send(blob)
+		if err != nil {
+			return err
+		}
+	}
 }
+
+// func (s *Server) Send(ctx context.Context, req *buffs.SendReq) (*buffs.SendRes, error) {
+// 	var blob, err = json.Marshal(&listener.Msg{
+// 		Route:    req.GetMsg().GetRoute(),
+// 		Contents: req.GetMsg().GetContents(),
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	err = s.ch.Send(blob)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &buffs.SendRes{}, nil
+// }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"strconv"
 	"time"
@@ -48,7 +49,7 @@ func main() {
 		// route1 = "ur_mom"
 		// route2 = "ur_dad"
 
-		b = channel_bus.New(100000)
+		b = channel_bus.New(10000000)
 	)
 
 	go servers(b)
@@ -68,24 +69,23 @@ func main() {
 	var (
 		sendClient = buffs.NewSenderClient(sendConn)
 		recvClient = buffs.NewRecvClient(recvConn)
+		max        = 2
 	)
 
-	// go send(0, sendClient)
+	const writersPerReaders = 20
 
-	var max = 10
-
-	for i := 0; i < max; i++ {
-		for j := 0; j < 100; j++ {
+	for i := 0; i < max-1; i++ {
+		for j := 0; j < writersPerReaders; j++ {
 			fmt.Println("sender")
-			go send(j+(i*100), sendClient)
+			go send(j+(i*writersPerReaders), sendClient)
 		}
 
 		go recv(i, recvClient)
 	}
 
-	for j := 0; j < 100; j++ {
+	for j := 0; j < writersPerReaders; j++ {
 		fmt.Println("sender")
-		go send(j+(max*100), sendClient)
+		go send(j+(max*writersPerReaders), sendClient)
 	}
 
 	recv(max, recvClient)
@@ -136,18 +136,22 @@ func recv(id int, recvClient buffs.RecvClient) {
 
 func send(id int, sendClient buffs.SenderClient) {
 	var (
-		i   int
-		err error
+		i int
 
-		ctx         = context.Background()
-		everySecond = 1 * time.Second
-		counter     = ratecounter.NewRateCounter(everySecond)
-		timer       = time.NewTimer(everySecond)
+		ctx           = context.Background()
+		everySecond   = 1 * time.Second
+		counter       = ratecounter.NewRateCounter(everySecond)
+		timer         = time.NewTimer(everySecond)
+		sendPipe, err = sendClient.Send(ctx)
 	)
+
+	if err != nil {
+		log.Fatalln("err Send:", err)
+	}
 
 	go func() {
 		for {
-			_, err = sendClient.Send(ctx, &buffs.SendReq{
+			err = sendPipe.Send(&buffs.SendReq{
 				Msg: &buffs.Message{
 					Route:    "a",
 					Contents: "",
@@ -155,7 +159,9 @@ func send(id int, sendClient buffs.SenderClient) {
 			})
 
 			if err != nil {
-				log.Fatalln("err sending:", err)
+				if err != io.EOF {
+					log.Fatalln("err sending:", err)
+				}
 			}
 
 			i++
@@ -169,6 +175,7 @@ func send(id int, sendClient buffs.SenderClient) {
 		select {
 		case <-timer.C:
 			// fmt.Printf("Send rate for %d: %d\n", id, counter.Rate())
+
 			timer.Reset(everySecond)
 		}
 	}
