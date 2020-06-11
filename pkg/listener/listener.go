@@ -1,5 +1,7 @@
 package listener
 
+// TODO: make the listener take a Recv or a Node
+
 type (
 	Listener interface {
 		ID() string

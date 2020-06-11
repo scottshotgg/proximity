@@ -3,19 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"strconv"
+	"sync"
 	"time"
 
 	"github.com/paulbellamy/ratecounter"
 	buffs "github.com/scottshotgg/proximity/pkg/buffs"
-	bus "github.com/scottshotgg/proximity/pkg/bus"
-	"github.com/scottshotgg/proximity/pkg/node"
-	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
-	grpc_recv "github.com/scottshotgg/proximity/pkg/recv/grpc"
-	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
-	grpc_sender "github.com/scottshotgg/proximity/pkg/sender/grpc"
+	grpc_node "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -45,137 +39,159 @@ import (
 // }
 
 func main() {
-	var n = node.New()
+	const port = 5001
 
-	go n.Start(5001)
+	var n = servers(port)
 
 	time.Sleep(100 * time.Millisecond)
+
+	clients(n)
 
 	// time.AfterFunc(1*time.Second, func() {
 	// 	os.Exit(0)
 	// })
-
-	go recv(0, n)
-	send(0, n)
 }
 
-func recv(id int, n *node.Node) {
+func clients(n *grpc_node.Node) {
+	var wg = &sync.WaitGroup{}
+
 	var conn, err = grpc.Dial(":5001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln("err recvConn:", err)
 	}
 
-	var (
-		recvClient = buffs.NewNodeClient(conn)
-		ctx        = context.Background()
-	)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	listener, err := recvClient.Attach(ctx, &buffs.AttachReq{
-		Id:    strconv.Itoa(id),
-		Route: "a",
-	})
+		recv("0", buffs.NewNodeClient(conn))
+	}()
+
+	conn, err = grpc.Dial(":5001", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalln("err recvConn:", err)
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		send(1, buffs.NewNodeClient(conn))
+	}()
+
+	wg.Wait()
+}
+
+func recv(id string, c buffs.NodeClient) {
+	var (
+		ctx   = context.Background()
+		route = "a"
+
+		listener, err = c.Attach(ctx, &buffs.AttachReq{
+			Id:    id,
+			Route: route,
+		})
+	)
 
 	if err != nil {
 		log.Fatalln("err making listener:", err)
 	}
 
+	// TODO: metadata not implemented right now for Node
 	md, err := listener.Header()
 	if err != nil {
 		log.Fatalln("err getting header values:", err)
 	}
 
-	fmt.Println("metadata:", md)
+	var (
+		idHeader    = md.Get("id")
+		routeHeader = md.Get("route")
+	)
+
+	if len(idHeader) > 0 {
+		id = idHeader[0]
+	}
+
+	if len(routeHeader) > 0 {
+		route = routeHeader[0]
+	}
+
+	// TODO: add checking for id and route
 
 	var counter = ratecounter.NewRateCounter(1 * time.Second)
 
-	var timer = time.NewTimer(1 * time.Second)
-
 	go func() {
-		for {
-			var _, err = listener.Recv()
-			if err != nil {
-				log.Fatalln("err", err)
-			}
+		var timer = time.NewTimer(1 * time.Second)
 
-			counter.Incr(1)
+		for {
+			select {
+			case <-timer.C:
+				fmt.Printf("Rate for %s: %d\n", id, counter.Rate())
+
+				timer.Reset(1 * time.Second)
+			}
 		}
 	}()
 
 	for {
-		select {
-		case <-timer.C:
-			fmt.Printf("Rate for %d: %d\n", id, counter.Rate())
-			timer.Reset(1 * time.Second)
+		var _, err = listener.Recv()
+		if err != nil {
+			log.Fatalln("err", err)
 		}
+
+		counter.Incr(1)
 	}
 }
 
-func send(id int, n *node.Node) {
-	var conn, err = grpc.Dial(":5001", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalln("err recvConn:", err)
-	}
-
+func send(id int, c buffs.NodeClient) {
 	var (
-		sendClient = buffs.NewNodeClient(conn)
-
 		i int
 
 		ctx         = context.Background()
 		everySecond = 1 * time.Second
 		counter     = ratecounter.NewRateCounter(everySecond)
 		timer       = time.NewTimer(everySecond)
+		emptyMsg    = &buffs.Message{
+			Route:    "a",
+			Contents: "",
+		}
+
+		sendPipe, err = c.Send(ctx)
 	)
 
-	sendPipe, err := sendClient.Send(ctx)
 	if err != nil {
 		log.Fatalln("err Send:", err)
 	}
 
 	go func() {
 		for {
-			err = sendPipe.Send(&buffs.SendReq{
-				Msg: &buffs.Message{
-					Route:    "a",
-					Contents: "",
-				},
-			})
+			select {
+			case <-timer.C:
+				// fmt.Printf("Send rate for %d: %d\n", id, counter.Rate())
 
-			if err != nil {
-				if err != io.EOF {
-					log.Fatalln("err sending:", err)
-				}
+				timer.Reset(everySecond)
 			}
-
-			i++
-			counter.Incr(1)
-
-			// time.Sleep(50 * time.Millisecond)
 		}
 	}()
 
 	for {
-		select {
-		case <-timer.C:
-			// fmt.Printf("Send rate for %d: %d\n", id, counter.Rate())
+		err = sendPipe.Send(&buffs.SendReq{
+			Msg: emptyMsg,
+		})
 
-			timer.Reset(everySecond)
+		if err != nil {
+			log.Fatalln("err sending:", err)
 		}
+
+		i++
+		counter.Incr(1)
 	}
 }
 
-func servers(b bus.Bus) {
-	go func() {
-		var err = grpc_sender.New(5001, channel_sender.New(b))
-		if err != nil {
-			log.Fatalln("err created sender:", err)
-		}
-	}()
+func servers(port int) *grpc_node.Node {
+	var n = grpc_node.New()
 
-	go func() {
-		var err = grpc_recv.New(5002, channel_recv.New(b))
-		if err != nil {
-			log.Fatalln("err creating recv", err)
-		}
-	}()
+	go n.Start(port)
+
+	return n
 }
