@@ -11,7 +11,7 @@ import (
 	"github.com/paulbellamy/ratecounter"
 	buffs "github.com/scottshotgg/proximity/pkg/buffs"
 	bus "github.com/scottshotgg/proximity/pkg/bus"
-	channel_bus "github.com/scottshotgg/proximity/pkg/bus/channel"
+	"github.com/scottshotgg/proximity/pkg/node"
 	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
 	grpc_recv "github.com/scottshotgg/proximity/pkg/recv/grpc"
 	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
@@ -45,56 +45,32 @@ import (
 // }
 
 func main() {
-	var (
-		// route1 = "ur_mom"
-		// route2 = "ur_dad"
+	var n = node.New()
 
-		b = channel_bus.New(10000000)
-	)
+	go n.Start(5001)
 
-	go servers(b)
+	time.Sleep(100 * time.Millisecond)
 
-	time.Sleep(1 * time.Second)
+	// time.AfterFunc(1*time.Second, func() {
+	// 	os.Exit(0)
+	// })
 
-	var recvConn, err = grpc.Dial(":5002", grpc.WithInsecure())
+	go recv(0, n)
+	send(0, n)
+}
+
+func recv(id int, n *node.Node) {
+	var conn, err = grpc.Dial(":5001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalln("err recvConn:", err)
 	}
 
-	sendConn, err := grpc.Dial(":5001", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalln("err sendConn:", err)
-	}
-
 	var (
-		sendClient = buffs.NewSenderClient(sendConn)
-		recvClient = buffs.NewRecvClient(recvConn)
-		max        = 2
+		recvClient = buffs.NewNodeClient(conn)
+		ctx        = context.Background()
 	)
 
-	const writersPerReaders = 20
-
-	for i := 0; i < max-1; i++ {
-		for j := 0; j < writersPerReaders; j++ {
-			fmt.Println("sender")
-			go send(j+(i*writersPerReaders), sendClient)
-		}
-
-		go recv(i, recvClient)
-	}
-
-	for j := 0; j < writersPerReaders; j++ {
-		fmt.Println("sender")
-		go send(j+(max*writersPerReaders), sendClient)
-	}
-
-	recv(max, recvClient)
-}
-
-func recv(id int, recvClient buffs.RecvClient) {
-	var ctx = context.Background()
-
-	var listener, err = recvClient.Attach(ctx, &buffs.AttachReq{
+	listener, err := recvClient.Attach(ctx, &buffs.AttachReq{
 		Id:    strconv.Itoa(id),
 		Route: "a",
 	})
@@ -134,17 +110,24 @@ func recv(id int, recvClient buffs.RecvClient) {
 	}
 }
 
-func send(id int, sendClient buffs.SenderClient) {
+func send(id int, n *node.Node) {
+	var conn, err = grpc.Dial(":5001", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalln("err recvConn:", err)
+	}
+
 	var (
+		sendClient = buffs.NewNodeClient(conn)
+
 		i int
 
-		ctx           = context.Background()
-		everySecond   = 1 * time.Second
-		counter       = ratecounter.NewRateCounter(everySecond)
-		timer         = time.NewTimer(everySecond)
-		sendPipe, err = sendClient.Send(ctx)
+		ctx         = context.Background()
+		everySecond = 1 * time.Second
+		counter     = ratecounter.NewRateCounter(everySecond)
+		timer       = time.NewTimer(everySecond)
 	)
 
+	sendPipe, err := sendClient.Send(ctx)
 	if err != nil {
 		log.Fatalln("err Send:", err)
 	}

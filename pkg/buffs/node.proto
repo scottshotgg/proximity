@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package buffs;
+
+import "sender.proto";
+import "recv.proto";
+
+service Node {
+  rpc Send(stream SendReq) returns (SendRes);
+  rpc Attach(AttachReq) returns (stream AttachRes);
+}
