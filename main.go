@@ -59,7 +59,8 @@ func clients(n *grpc_node.Node) {
 	var wg = &sync.WaitGroup{}
 
 	var funcs = []func(id int, c buffs.NodeClient){
-		recv, send,
+		recv,
+		send,
 	}
 
 	for i := range funcs {
