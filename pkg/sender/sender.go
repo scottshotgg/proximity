@@ -6,6 +6,8 @@ type (
 		Open() error
 		Close() error
 
+		// Discover(nodes []string) ([]string, error)
+
 		Send(msg []byte) error
 	}
 )

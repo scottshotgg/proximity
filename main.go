@@ -91,6 +91,8 @@ func recv(id int, c buffs.NodeClient) {
 		})
 	)
 
+	_, err = c.Discover(context.Background(), &buffs.DiscoverReq{})
+
 	if err != nil {
 		log.Fatalln("err making listener:", err)
 	}

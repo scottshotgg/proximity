@@ -5,7 +5,20 @@ package buffs;
 import "sender.proto";
 import "recv.proto";
 
+// message Node {}
+
+message DiscoverReq {
+  // TODO: this may need to be changed to clients, listeners, and nodes or something; a map of network maps? idk if getting too complicated
+  // string node = 1;
+}
+
+message DiscoverRes {
+  // TODO: this may need to be changed to clients, listeners, and nodes or something; a map of network maps? idk if getting too complicated
+  repeated string nodes = 1;
+}
+
 service Node {
   rpc Send(stream SendReq) returns (SendRes);
   rpc Attach(AttachReq) returns (stream AttachRes);
+  rpc Discover(DiscoverReq) returns (DiscoverRes);
 }
