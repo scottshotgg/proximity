@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -53,42 +54,38 @@ func main() {
 }
 
 func clients(n *grpc_node.Node) {
+	const port = ":5001"
+
 	var wg = &sync.WaitGroup{}
 
-	var conn, err = grpc.Dial(":5001", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalln("err recvConn:", err)
+	var funcs = []func(id int, c buffs.NodeClient){
+		recv, send,
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	for i := range funcs {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
 
-		recv("0", buffs.NewNodeClient(conn))
-	}()
+			var conn, err = grpc.Dial(port, grpc.WithInsecure())
+			if err != nil {
+				log.Fatalln("err recvConn:", err)
+			}
 
-	conn, err = grpc.Dial(":5001", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalln("err recvConn:", err)
+			funcs[id](id, buffs.NewNodeClient(conn))
+		}(i)
 	}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		send(1, buffs.NewNodeClient(conn))
-	}()
 
 	wg.Wait()
 }
 
-func recv(id string, c buffs.NodeClient) {
+func recv(id int, c buffs.NodeClient) {
 	var (
 		ctx   = context.Background()
 		route = "a"
 
 		listener, err = c.Attach(ctx, &buffs.AttachReq{
-			Id:    id,
+			Id:    strconv.Itoa(id),
 			Route: route,
 		})
 	)
@@ -103,18 +100,20 @@ func recv(id string, c buffs.NodeClient) {
 		log.Fatalln("err getting header values:", err)
 	}
 
-	var (
-		idHeader    = md.Get("id")
-		routeHeader = md.Get("route")
-	)
+	fmt.Println("Metadata:", md)
 
-	if len(idHeader) > 0 {
-		id = idHeader[0]
-	}
+	// var (
+	// 	idHeader    = md.Get("id")
+	// 	routeHeader = md.Get("route")
+	// )
 
-	if len(routeHeader) > 0 {
-		route = routeHeader[0]
-	}
+	// if len(idHeader) > 0 {
+	// 	id = idHeader[0]
+	// }
+
+	// if len(routeHeader) > 0 {
+	// 	route = routeHeader[0]
+	// }
 
 	// TODO: add checking for id and route
 
@@ -126,7 +125,7 @@ func recv(id string, c buffs.NodeClient) {
 		for {
 			select {
 			case <-timer.C:
-				fmt.Printf("Rate for %s: %d\n", id, counter.Rate())
+				fmt.Printf("Rate for %d: %d\n", id, counter.Rate())
 
 				timer.Reset(1 * time.Second)
 			}
