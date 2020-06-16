@@ -10,6 +10,8 @@ import (
 
 	"github.com/paulbellamy/ratecounter"
 	buffs "github.com/scottshotgg/proximity/pkg/buffs"
+	"github.com/scottshotgg/proximity/pkg/listener"
+	grpc_lis "github.com/scottshotgg/proximity/pkg/listener/grpc"
 	grpc_node "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
 )
@@ -59,7 +61,6 @@ func clients(n *grpc_node.Node) {
 	var wg = &sync.WaitGroup{}
 
 	var funcs = []func(id int, c buffs.NodeClient){
-		recv,
 		send,
 	}
 
@@ -77,71 +78,37 @@ func clients(n *grpc_node.Node) {
 		}(i)
 	}
 
+	go recv(1)
+
 	wg.Wait()
 }
 
-func recv(id int, c buffs.NodeClient) {
-	var (
-		ctx   = context.Background()
-		route = "a"
-
-		listener, err = c.Attach(ctx, &buffs.AttachReq{
-			Id:    strconv.Itoa(id),
-			Route: route,
-		})
-	)
-
-	_, err = c.Discover(context.Background(), &buffs.DiscoverReq{})
-
-	if err != nil {
-		log.Fatalln("err making listener:", err)
-	}
-
-	// TODO: metadata not implemented right now for Node
-	md, err := listener.Header()
-	if err != nil {
-		log.Fatalln("err getting header values:", err)
-	}
-
-	fmt.Println("Metadata:", md)
-
-	// var (
-	// 	idHeader    = md.Get("id")
-	// 	routeHeader = md.Get("route")
-	// )
-
-	// if len(idHeader) > 0 {
-	// 	id = idHeader[0]
-	// }
-
-	// if len(routeHeader) > 0 {
-	// 	route = routeHeader[0]
-	// }
+func recv(id int) {
 
 	// TODO: add checking for id and route
 
-	var counter = ratecounter.NewRateCounter(1 * time.Second)
+	var (
+		counter = ratecounter.NewRateCounter(1 * time.Second)
+		_, err  = grpc_lis.New(strconv.Itoa(id), "a", ":5001", func(msg *listener.Msg) error {
+			counter.Incr(1)
 
-	go func() {
-		var timer = time.NewTimer(1 * time.Second)
+			return nil
+		})
+	)
 
-		for {
-			select {
-			case <-timer.C:
-				fmt.Printf("Rate for %d: %d\n", id, counter.Rate())
+	if err != nil {
+		log.Fatalln("error creating listener:", err)
+	}
 
-				timer.Reset(1 * time.Second)
-			}
-		}
-	}()
+	var timer = time.NewTimer(1 * time.Second)
 
 	for {
-		var _, err = listener.Recv()
-		if err != nil {
-			log.Fatalln("err", err)
-		}
+		select {
+		case <-timer.C:
+			fmt.Printf("Rate for %d: %d\n", id, counter.Rate())
 
-		counter.Incr(1)
+			timer.Reset(1 * time.Second)
+		}
 	}
 }
 

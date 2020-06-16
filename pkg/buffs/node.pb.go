@@ -24,6 +24,211 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type Message struct {
+	Route                string   `protobuf:"bytes,1,opt,name=route,proto3" json:"route,omitempty"`
+	Contents             string   `protobuf:"bytes,2,opt,name=contents,proto3" json:"contents,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Message) Reset()         { *m = Message{} }
+func (m *Message) String() string { return proto.CompactTextString(m) }
+func (*Message) ProtoMessage()    {}
+func (*Message) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0c843d59d2d938e7, []int{0}
+}
+
+func (m *Message) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Message.Unmarshal(m, b)
+}
+func (m *Message) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Message.Marshal(b, m, deterministic)
+}
+func (m *Message) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Message.Merge(m, src)
+}
+func (m *Message) XXX_Size() int {
+	return xxx_messageInfo_Message.Size(m)
+}
+func (m *Message) XXX_DiscardUnknown() {
+	xxx_messageInfo_Message.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Message proto.InternalMessageInfo
+
+func (m *Message) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+func (m *Message) GetContents() string {
+	if m != nil {
+		return m.Contents
+	}
+	return ""
+}
+
+type SendReq struct {
+	Msg                  *Message `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SendReq) Reset()         { *m = SendReq{} }
+func (m *SendReq) String() string { return proto.CompactTextString(m) }
+func (*SendReq) ProtoMessage()    {}
+func (*SendReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0c843d59d2d938e7, []int{1}
+}
+
+func (m *SendReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SendReq.Unmarshal(m, b)
+}
+func (m *SendReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SendReq.Marshal(b, m, deterministic)
+}
+func (m *SendReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SendReq.Merge(m, src)
+}
+func (m *SendReq) XXX_Size() int {
+	return xxx_messageInfo_SendReq.Size(m)
+}
+func (m *SendReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_SendReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SendReq proto.InternalMessageInfo
+
+func (m *SendReq) GetMsg() *Message {
+	if m != nil {
+		return m.Msg
+	}
+	return nil
+}
+
+type SendRes struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SendRes) Reset()         { *m = SendRes{} }
+func (m *SendRes) String() string { return proto.CompactTextString(m) }
+func (*SendRes) ProtoMessage()    {}
+func (*SendRes) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0c843d59d2d938e7, []int{2}
+}
+
+func (m *SendRes) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SendRes.Unmarshal(m, b)
+}
+func (m *SendRes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SendRes.Marshal(b, m, deterministic)
+}
+func (m *SendRes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SendRes.Merge(m, src)
+}
+func (m *SendRes) XXX_Size() int {
+	return xxx_messageInfo_SendRes.Size(m)
+}
+func (m *SendRes) XXX_DiscardUnknown() {
+	xxx_messageInfo_SendRes.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SendRes proto.InternalMessageInfo
+
+type AttachReq struct {
+	// id is a requested ID only; no gaurantee
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// route is a requested route; the server can kick it back
+	Route                string   `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AttachReq) Reset()         { *m = AttachReq{} }
+func (m *AttachReq) String() string { return proto.CompactTextString(m) }
+func (*AttachReq) ProtoMessage()    {}
+func (*AttachReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0c843d59d2d938e7, []int{3}
+}
+
+func (m *AttachReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AttachReq.Unmarshal(m, b)
+}
+func (m *AttachReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AttachReq.Marshal(b, m, deterministic)
+}
+func (m *AttachReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttachReq.Merge(m, src)
+}
+func (m *AttachReq) XXX_Size() int {
+	return xxx_messageInfo_AttachReq.Size(m)
+}
+func (m *AttachReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttachReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AttachReq proto.InternalMessageInfo
+
+func (m *AttachReq) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *AttachReq) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+type AttachRes struct {
+	Message              *Message `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AttachRes) Reset()         { *m = AttachRes{} }
+func (m *AttachRes) String() string { return proto.CompactTextString(m) }
+func (*AttachRes) ProtoMessage()    {}
+func (*AttachRes) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0c843d59d2d938e7, []int{4}
+}
+
+func (m *AttachRes) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AttachRes.Unmarshal(m, b)
+}
+func (m *AttachRes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AttachRes.Marshal(b, m, deterministic)
+}
+func (m *AttachRes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttachRes.Merge(m, src)
+}
+func (m *AttachRes) XXX_Size() int {
+	return xxx_messageInfo_AttachRes.Size(m)
+}
+func (m *AttachRes) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttachRes.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AttachRes proto.InternalMessageInfo
+
+func (m *AttachRes) GetMessage() *Message {
+	if m != nil {
+		return m.Message
+	}
+	return nil
+}
+
 type DiscoverReq struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -34,7 +239,7 @@ func (m *DiscoverReq) Reset()         { *m = DiscoverReq{} }
 func (m *DiscoverReq) String() string { return proto.CompactTextString(m) }
 func (*DiscoverReq) ProtoMessage()    {}
 func (*DiscoverReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0c843d59d2d938e7, []int{0}
+	return fileDescriptor_0c843d59d2d938e7, []int{5}
 }
 
 func (m *DiscoverReq) XXX_Unmarshal(b []byte) error {
@@ -67,7 +272,7 @@ func (m *DiscoverRes) Reset()         { *m = DiscoverRes{} }
 func (m *DiscoverRes) String() string { return proto.CompactTextString(m) }
 func (*DiscoverRes) ProtoMessage()    {}
 func (*DiscoverRes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0c843d59d2d938e7, []int{1}
+	return fileDescriptor_0c843d59d2d938e7, []int{6}
 }
 
 func (m *DiscoverRes) XXX_Unmarshal(b []byte) error {
@@ -96,36 +301,45 @@ func (m *DiscoverRes) GetNodes() []string {
 }
 
 func init() {
+	proto.RegisterType((*Message)(nil), "buffs.Message")
+	proto.RegisterType((*SendReq)(nil), "buffs.SendReq")
+	proto.RegisterType((*SendRes)(nil), "buffs.SendRes")
+	proto.RegisterType((*AttachReq)(nil), "buffs.AttachReq")
+	proto.RegisterType((*AttachRes)(nil), "buffs.AttachRes")
 	proto.RegisterType((*DiscoverReq)(nil), "buffs.DiscoverReq")
 	proto.RegisterType((*DiscoverRes)(nil), "buffs.DiscoverRes")
 }
 
-func init() {
-	proto.RegisterFile("node.proto", fileDescriptor_0c843d59d2d938e7)
-}
+func init() { proto.RegisterFile("node.proto", fileDescriptor_0c843d59d2d938e7) }
 
 var fileDescriptor_0c843d59d2d938e7 = []byte{
-	// 175 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xca, 0xcb, 0x4f, 0x49,
-	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4d, 0x2a, 0x4d, 0x4b, 0x2b, 0x96, 0xe2, 0x29,
-	0x4e, 0xcd, 0x4b, 0x49, 0x2d, 0x82, 0x08, 0x4a, 0x71, 0x15, 0xa5, 0x26, 0x97, 0x41, 0xd8, 0x4a,
-	0xbc, 0x5c, 0xdc, 0x2e, 0x99, 0xc5, 0xc9, 0xf9, 0x65, 0xa9, 0x45, 0x41, 0xa9, 0x85, 0x4a, 0xca,
-	0xc8, 0xdc, 0x62, 0x21, 0x11, 0x2e, 0x56, 0x90, 0x61, 0xc5, 0x12, 0x8c, 0x0a, 0xcc, 0x1a, 0x9c,
-	0x41, 0x10, 0x8e, 0xd1, 0x14, 0x46, 0x2e, 0x16, 0xbf, 0xfc, 0x94, 0x54, 0x21, 0x0d, 0x2e, 0x96,
-	0xe0, 0xd4, 0xbc, 0x14, 0x21, 0x3e, 0x3d, 0xb0, 0x35, 0x7a, 0x20, 0x4e, 0x50, 0x6a, 0xa1, 0x14,
-	0x2a, 0xbf, 0x58, 0x83, 0x51, 0x48, 0x8f, 0x8b, 0xcd, 0xb1, 0xa4, 0x24, 0x31, 0x39, 0x43, 0x48,
-	0x00, 0x2a, 0x07, 0xe1, 0x82, 0x54, 0xa3, 0x8b, 0x14, 0x1b, 0x30, 0x0a, 0x19, 0x71, 0x71, 0xc0,
-	0xdc, 0x21, 0x24, 0x04, 0x95, 0x47, 0x72, 0xa7, 0x14, 0xa6, 0x58, 0x71, 0x12, 0x1b, 0xd8, 0x47,
-	0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x17, 0x61, 0xcb, 0xa3, 0x00, 0x01, 0x00, 0x00,
+	// 261 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0x3f, 0x4f, 0xc3, 0x30,
+	0x10, 0xc5, 0xe5, 0xf4, 0x4f, 0x9a, 0xab, 0xa8, 0xd0, 0x89, 0x21, 0xca, 0x14, 0x99, 0x25, 0x12,
+	0x52, 0x04, 0x41, 0x4c, 0x4c, 0x48, 0xac, 0x30, 0x84, 0x4f, 0xd0, 0xc6, 0xd7, 0x92, 0xa1, 0x31,
+	0xcd, 0xb9, 0x7c, 0x12, 0x3e, 0x30, 0xb2, 0x63, 0xb7, 0x01, 0xc4, 0xf8, 0xee, 0xe5, 0xde, 0xfb,
+	0x5d, 0x0c, 0xd0, 0x69, 0x45, 0xe5, 0x47, 0xaf, 0x8d, 0xc6, 0xd9, 0xe6, 0xb8, 0xdd, 0xb2, 0x7c,
+	0x84, 0xf8, 0x85, 0x98, 0xd7, 0x3b, 0xc2, 0x2b, 0x98, 0xf5, 0xfa, 0x68, 0x28, 0x15, 0xb9, 0x28,
+	0x92, 0x7a, 0x10, 0x98, 0xc1, 0xa2, 0xd1, 0x9d, 0xa1, 0xce, 0x70, 0x1a, 0x39, 0xe3, 0xa4, 0xe5,
+	0x0d, 0xc4, 0x6f, 0xd4, 0xa9, 0x9a, 0x0e, 0x98, 0xc3, 0x64, 0xcf, 0x3b, 0xb7, 0xba, 0xac, 0x56,
+	0xa5, 0x0b, 0x2f, 0x7d, 0x72, 0x6d, 0x2d, 0x99, 0x84, 0x8f, 0x59, 0xde, 0x41, 0xf2, 0x64, 0xcc,
+	0xba, 0x79, 0xb7, 0x9b, 0x2b, 0x88, 0x5a, 0xe5, 0x3b, 0xa3, 0x56, 0x9d, 0x31, 0xa2, 0x11, 0x86,
+	0x7c, 0x38, 0xaf, 0x30, 0x16, 0x10, 0xef, 0x87, 0xe8, 0x7f, 0x0a, 0x83, 0x2d, 0x2f, 0x60, 0xf9,
+	0xdc, 0x72, 0xa3, 0x3f, 0xa9, 0xaf, 0xe9, 0x20, 0xaf, 0xc7, 0x92, 0x6d, 0x95, 0xfd, 0x23, 0x9c,
+	0x8a, 0x7c, 0x62, 0xab, 0x9c, 0xa8, 0xbe, 0x04, 0x4c, 0x5f, 0xb5, 0x22, 0x2c, 0x60, 0x6a, 0x89,
+	0x31, 0xa4, 0xfb, 0x5b, 0xb3, 0x9f, 0x9a, 0x0b, 0x81, 0x25, 0xcc, 0x07, 0x3a, 0xbc, 0xf4, 0xde,
+	0xe9, 0xbe, 0xec, 0xf7, 0x84, 0x6f, 0x05, 0x56, 0xb0, 0x08, 0x1c, 0x88, 0xde, 0x1f, 0x71, 0x66,
+	0x7f, 0x67, 0xbc, 0x99, 0xbb, 0x77, 0xbb, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xd7, 0xf6, 0x0b,
+	0xf8, 0xc5, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConnInterface
+var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion4
 
 // NodeClient is the client API for Node service.
 //
@@ -137,10 +351,10 @@ type NodeClient interface {
 }
 
 type nodeClient struct {
-	cc grpc.ClientConnInterface
+	cc *grpc.ClientConn
 }
 
-func NewNodeClient(cc grpc.ClientConnInterface) NodeClient {
+func NewNodeClient(cc *grpc.ClientConn) NodeClient {
 	return &nodeClient{cc}
 }
 
