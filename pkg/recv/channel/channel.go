@@ -103,77 +103,59 @@ func (s *Sink) recv() error {
 
 	// TODO: change this to use a future and return a channel on Recieve
 	// have Sync and Async
-	var workChan = make(chan struct{}, 10)
+	// var workChan = make(chan struct{}, 10)
 
 	for {
-		s.mut.Lock()
+		// Put all below into another worker func or something
 
-		if s.closed {
-			return errClosed
+		var msg listener.Msg
+
+		select {
+		case m := <-msgChan:
+			var err = json.Unmarshal([]byte(m), &msg)
+			if err != nil {
+				log.Fatalln("err unmarshal", err)
+				// TODO: handle
+				return err
+			}
+
+		// TODO: timeout, this may be better as a context
+		case <-time.After(1 * time.Second):
+			// log.Println("err timeout")
+			continue
 		}
 
-		s.mut.Unlock()
-
-		// Reserve a spot
-		workChan <- struct{}{}
-
-		go func() {
-			// Relinquish the spot
-			defer func() {
-				_ = <-workChan
-			}()
-
-			// Put all below into another worker func or something
-
-			var msg listener.Msg
-
-			select {
-			case m := <-msgChan:
-				var err = json.Unmarshal([]byte(m), &msg)
+		switch msg.Route {
+		case RouteAll:
+			go func(m *listener.Msg) {
+				log.Println("broadcast")
+				var err = s.broadcast(m)
 				if err != nil {
-					log.Fatalln("err unmarshal", err)
-					// TODO: handle
-					return
+					log.Println("err broadbasting", err)
 				}
+			}(&msg)
 
-			// TODO: timeout, this may be better as a context
-			case <-time.After(1 * time.Second):
-				// log.Println("err timeout")
-				return
+		case RouteNoOp:
+			log.Println("noop")
+			continue
+
+		default:
+			var listeners, ok = s.listeners[msg.Route]
+			if !ok {
+				log.Println("could not find listener, tossing")
+				// TODO: implement default behavior
+				continue
 			}
 
-			switch msg.Route {
-			case RouteAll:
-				go func(m *listener.Msg) {
-					log.Println("broadcast")
-					var err = s.broadcast(m)
+			for _, l := range listeners {
+				go func(l listener.Listener) {
+					var err = l.Handle(&msg)
 					if err != nil {
-						log.Println("err broadbasting", err)
+						// TODO: do something here... maybe internally queue?
 					}
-				}(&msg)
-
-			case RouteNoOp:
-				log.Println("noop")
-				return
-
-			default:
-				var listeners, ok = s.listeners[msg.Route]
-				if !ok {
-					log.Println("could not find listener, tossing")
-					// TODO: implement default behavior
-					return
-				}
-
-				for _, l := range listeners {
-					go func(l listener.Listener) {
-						var err = l.Handle(&msg)
-						if err != nil {
-							// TODO: do something here... maybe internally queue?
-						}
-					}(l)
-				}
+				}(l)
 			}
-		}()
+		}
 	}
 }
 
