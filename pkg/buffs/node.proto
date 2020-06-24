@@ -7,14 +7,14 @@ message Message {
 }
 
 message PublishReq {
-  string route = 1;
+  repeated string routes = 1;
   bytes contents = 2;
 }
 
 message PublishRes {}
 
 message SubscribeReq {
-  string route = 1;
+  repeated string topics = 1;
 }
 
 message SubscribeRes {
