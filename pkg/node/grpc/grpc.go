@@ -39,10 +39,11 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 			req, err = srv.Recv()
 			if err != nil {
 				if err == io.EOF {
-					err = nil
+					errChan <- nil
+				} else {
+					errChan <- err
 				}
 
-				errChan <- err
 				return
 			}
 		}
@@ -80,10 +81,11 @@ func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeSe
 
 				if err != nil {
 					if err == io.EOF {
-						err = nil
+						errChan <- nil
+					} else {
+						errChan <- err
 					}
 
-					errChan <- err
 					return
 				}
 			}
