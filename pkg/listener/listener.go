@@ -7,6 +7,7 @@ type (
 		ID() string
 		Route() string
 		Handle(msg *Msg) error
+		Close() error
 	}
 
 	Msg struct {

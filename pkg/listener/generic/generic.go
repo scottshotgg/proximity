@@ -13,6 +13,7 @@ type (
 		id     string
 		route  string
 		handle handler
+		closed bool
 	}
 )
 
@@ -37,5 +38,15 @@ func (g *Generic) Route() string {
 }
 
 func (g *Generic) Handle(msg *listener.Msg) error {
+	if g.closed {
+		return errors.New("handle closed")
+	}
+
 	return g.handle(msg)
+}
+
+func (g *Generic) Close() error {
+	g.closed = true
+
+	return nil
 }

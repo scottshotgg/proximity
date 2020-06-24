@@ -1,6 +1,8 @@
 package reciever
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
@@ -33,6 +35,7 @@ var (
 type (
 	// Sink ...
 	Sink struct {
+		ctx       context.Context
 		closed    bool
 		mut       *sync.RWMutex
 		listeners map[string][]listener.Listener
@@ -48,8 +51,9 @@ type (
 // }
 
 // New ...
-func New(b bus.Bus) recv.Recv {
+func New(ctx context.Context, b bus.Bus) recv.Recv {
 	var s = Sink{
+		ctx:       ctx,
 		mut:       &sync.RWMutex{},
 		listeners: map[string][]listener.Listener{},
 		b:         b,
@@ -67,8 +71,17 @@ func New(b bus.Bus) recv.Recv {
 
 		for {
 			select {
+			case <-s.ctx.Done():
+				return
+
 			case <-timer.C:
-				log.Println("Current network Map:", s.listeners)
+				var networkMapBlob, err = json.MarshalIndent(s.listeners, "", "\t")
+				if err != nil {
+					log.Println("err json.Marshal(s.listeners):", err)
+					continue
+				}
+
+				log.Println("Current network Map:", string(networkMapBlob))
 			}
 		}
 
@@ -96,48 +109,96 @@ func (s *Sink) Close() error {
 	s.closed = true
 	// TODO: should this also stop recv?
 
+	for _, route := range s.listeners {
+		for _, listener := range route {
+			listener.Close()
+		}
+	}
+
 	return nil
 }
 
 // TODO: this needs to be a background function
 // Recv ...
 func (s *Sink) recv() error {
-	var msgChan = make(chan *listener.Msg, 2000000)
+	var msgChan = make(chan *listener.Msg, 100)
 
 	go func() {
-		for {
-			// time.Sleep(500 * time.Millisecond)
+		var wg = &sync.WaitGroup{}
 
-			var m, err = s.b.Remove()
-			if err != nil {
-				// log.Fatalln("err removing:", err)
-				continue
-			}
+		for i := 0; i < 1; i++ {
+			wg.Add(1)
 
-			msgChan <- m
+			go func() {
+				defer wg.Done()
+
+				for {
+					select {
+					case <-s.ctx.Done():
+						close(msgChan)
+						return
+
+					default:
+						// time.Sleep(500 * time.Millisecond)
+
+						var m, err = s.b.Remove()
+						if err != nil {
+							// log.Fatalln("err removing:", err)
+							continue
+						}
+
+						msgChan <- m
+					}
+				}
+			}()
+
+			wg.Wait()
 		}
 	}()
 
 	// TODO: change this to use a future and return a channel on Recieve
 	// have Sync and Async
-	// var workChan = make(chan struct{}, 10)
 
-	for {
-		// Put all below into another worker func or something
+	var wg = &sync.WaitGroup{}
 
-		select {
-		case m := <-msgChan:
-			s.route(m)
+	for i := 0; i < 1; i++ {
+		wg.Add(1)
 
-		// TODO: timeout, this may be better as a context
-		case <-time.After(1 * time.Second):
-			// log.Println("err timeout")
-			continue
-		}
+		go func() {
+			defer wg.Done()
+
+			var timer = time.NewTimer(1 * time.Second)
+
+			for {
+				// Put all below into another worker func or something
+
+				select {
+				case <-s.ctx.Done():
+					return
+
+				case m := <-msgChan:
+					go s.route(m)
+
+				// TODO: timeout, this may be better as a context
+				case <-timer.C:
+					timer.Reset(1 * time.Second)
+					// log.Println("err timeout")
+					continue
+				}
+			}
+		}()
 	}
+
+	wg.Wait()
+
+	return nil
 }
 
 func (s *Sink) route(msg *listener.Msg) {
+	if s.closed {
+		return
+	}
+
 	var split = strings.Split(msg.Route, "/")
 	if len(split) < 1 {
 		// We cannot do anything with this message, throw it in a log or something
@@ -155,7 +216,7 @@ func (s *Sink) route(msg *listener.Msg) {
 		}(msg)
 
 	case RouteNoOp:
-		log.Println("noop")
+		// log.Println("noop")
 		return
 
 	case RouteID:
@@ -167,12 +228,12 @@ func (s *Sink) route(msg *listener.Msg) {
 			ok        bool
 		)
 
-		s.mut.Lock()
+		s.mut.RLock()
 		listeners, ok = s.listeners[msg.Route]
-		s.mut.Unlock()
+		s.mut.RUnlock()
 
 		if !ok {
-			log.Println("could not find listener, tossing:", msg.Route)
+			// log.Println("could not find listener, tossing:", msg.Route)
 			// TODO: implement default behavior
 			return
 		}
@@ -182,6 +243,7 @@ func (s *Sink) route(msg *listener.Msg) {
 				var err = l.Handle(msg)
 				if err != nil {
 					// TODO: do something here... maybe internally queue?
+					log.Fatalln("err", err)
 				}
 			}(l)
 		}

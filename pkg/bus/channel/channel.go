@@ -1,8 +1,8 @@
 package channel
 
 import (
+	"context"
 	"errors"
-	"log"
 	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/bus"
@@ -24,6 +24,7 @@ type (
 		q      chan *listener.Msg
 		mut    *sync.RWMutex
 		once   sync.Once
+		ctx    context.Context
 
 		// topics map[string]chan *listener.Msg
 	}
@@ -41,8 +42,9 @@ func (c *Channel) Close() error {
 	c.mut.Unlock()
 
 	c.once.Do(func() {
-		// close(c.q)
-		log.Fatalln("close is not implemented")
+		close(c.q)
+		c.closed = true
+		// log.Fatalln("close is not implemented")
 	})
 
 	return nil
@@ -77,7 +79,15 @@ func (c *Channel) Insert(msg *listener.Msg) error {
 	// ch <- msg
 	//
 
-	c.q <- msg
+	if c.closed {
+		return nil
+	}
+
+	select {
+	case <-c.ctx.Done():
+
+	case c.q <- msg:
+	}
 
 	// select {
 	// case c.q <- msg:
@@ -100,7 +110,15 @@ func (c *Channel) Remove() (*listener.Msg, error) {
 
 	// c.mut.RUnlock()
 
-	return <-c.q, nil
+	select {
+	case <-c.ctx.Done():
+		return nil, errors.New("bus closed")
+
+	case msg := <-c.q:
+		return msg, nil
+	}
+
+	// return <-c.q, nil
 
 	// select {
 	// case msg := <-c.q:
@@ -113,9 +131,10 @@ func (c *Channel) Remove() (*listener.Msg, error) {
 }
 
 // New ...
-func New(size int) bus.Bus {
+func New(ctx context.Context, size int) bus.Bus {
 	return &Channel{
-		q: make(chan *listener.Msg, size),
+		ctx: ctx,
+		q:   make(chan *listener.Msg),
 		// topics: map[string]chan *listener.Msg{},
 		mut: &sync.RWMutex{},
 	}

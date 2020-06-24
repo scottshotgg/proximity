@@ -1,6 +1,8 @@
 package channel
 
 import (
+	"context"
+	"errors"
 	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/bus"
@@ -10,14 +12,16 @@ import (
 
 type (
 	Source struct {
+		ctx    context.Context
 		closed bool
 		mut    *sync.RWMutex
 		b      bus.Bus
 	}
 )
 
-func New(b bus.Bus) sender.Sender {
+func New(ctx context.Context, b bus.Bus) sender.Sender {
 	return &Source{
+		ctx: ctx,
 		mut: &sync.RWMutex{},
 		b:   b,
 	}
@@ -46,5 +50,18 @@ func (s *Source) Close() error {
 }
 
 func (s *Source) Send(msg *listener.Msg) error {
-	return s.b.Insert(msg)
+	var err error
+
+	select {
+	case <-s.ctx.Done():
+		// err = s.ctx.Err()
+		return errors.New("sender closed")
+
+	default:
+		if !s.closed {
+			err = s.b.Insert(msg)
+		}
+	}
+
+	return err
 }

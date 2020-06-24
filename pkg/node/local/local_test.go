@@ -1,17 +1,27 @@
 package local_test
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"os"
+	"sync"
 	"testing"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/paulbellamy/ratecounter"
 	"github.com/scottshotgg/proximity/pkg/node/local"
+
+	// "go.uber.org/goleak"
+	"github.com/pkg/profile"
 )
 
 func TestP2P(t *testing.T) {
+	defer profile.Start().Stop()
+	// go http.ListenAndServe("0.0.0.0:8080", nil)
+
+	// defer goleak.VerifyNone(t)
+
 	const (
 		route   = "a"
 		testMsg = ""
@@ -38,35 +48,73 @@ func TestP2P(t *testing.T) {
 		recvcounter = ratecounter.NewRateCounter(everySecond)
 		sendcounter = ratecounter.NewRateCounter(everySecond)
 		timer       = time.NewTimer(everySecond)
+		testTime    = 20 * everySecond
 	)
 
-	time.AfterFunc(1*time.Minute, func() {
-		os.Exit(9)
-	})
+	var ctx, cancel = context.WithTimeout(context.Background(), testTime)
+	defer cancel()
 
 	go func() {
 		for {
 			select {
 			case <-timer.C:
-				fmt.Println("Recv:", recvcounter.Rate())
-				fmt.Println("Send:", sendcounter.Rate())
+				log.Println("Recv:", recvcounter.Rate())
+				log.Println("Send:", sendcounter.Rate())
 				timer.Reset(everySecond)
+
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			}
+		}
+	}()
+
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case <-ctx.Done():
+	// 			return
+	// 		}
+	// 	}
+	// }()
+
+	var wg = &sync.WaitGroup{}
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			// Insert test message
+			case pub <- []byte{}:
+				sendcounter.Incr(1)
 			}
 		}
 	}()
 
 	go func() {
+		defer wg.Done()
+
 		for {
-			// Insert test message
-			pub <- []byte{}
-			sendcounter.Incr(1)
+			select {
+			case <-ctx.Done():
+				return
+
+			case <-sub:
+				recvcounter.Incr(1)
+			}
 		}
 	}()
 
-	for {
-		select {
-		case <-sub:
-			recvcounter.Incr(1)
-		}
-	}
+	wg.Wait()
+	cancel()
+
+	// close(pub)
+	n.Close()
+	close(sub)
 }

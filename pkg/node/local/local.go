@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"errors"
 	"log"
 	"sync"
@@ -13,16 +14,18 @@ import (
 	"github.com/scottshotgg/proximity/pkg/node"
 	"github.com/scottshotgg/proximity/pkg/recv"
 	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
-	"github.com/scottshotgg/proximity/pkg/sender"
 )
 
 type local struct {
-	b         bus.Bus
-	s         sender.Sender
+	b bus.Bus
+	// s         sender.Sender
 	r         recv.Recv
 	listeners map[string]listener.Listener
 	// grpcServer *grpc.Server
-	nodes map[string]struct{}
+	nodes  map[string]struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
+	closed bool
 
 	// bus chan []byte
 
@@ -36,16 +39,20 @@ var (
 )
 
 func New() node.Node {
-	var b = channel_bus.New(100)
+	var ctx, cancel = context.WithCancel(context.Background())
+
+	var b = channel_bus.New(ctx, 100)
 
 	return &local{
 		listeners: map[string]listener.Listener{},
 		// nodes:     map[string]struct{}{},
 
 		b: b,
-		// s:    channel_sender.New(b),
-		r:    channel_recv.New(b),
-		lock: &sync.RWMutex{},
+		// s:    channel_sender.New(ctx, b),
+		ctx:    ctx,
+		cancel: cancel,
+		r:      channel_recv.New(ctx, b),
+		lock:   &sync.RWMutex{},
 	}
 }
 
@@ -55,13 +62,16 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 	defer l.lock.Unlock()
 
 	var (
-		ch = make(chan []byte, 100000000)
+		ch = make(chan []byte, 100)
 		// errChan = make(chan error)
 	)
 
 	go func() {
 		for {
 			select {
+			case <-l.ctx.Done():
+				return
+
 			case msg := <-ch:
 				var err = l.b.Insert(&listener.Msg{
 					Route:    route,
@@ -78,7 +88,7 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 	return ch, nil
 }
 
-func (l *local) Subscribe(route string) (<-chan *listener.Msg, string, error) {
+func (l *local) Subscribe(route string) (chan *listener.Msg, string, error) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -87,7 +97,7 @@ func (l *local) Subscribe(route string) (<-chan *listener.Msg, string, error) {
 		return nil, "", err
 	}
 
-	var ch = make(chan *listener.Msg, 100000000)
+	var ch = make(chan *listener.Msg, 100)
 
 	lis, err := generic_lis.New(id.String(), route, func(msg *listener.Msg) error {
 		ch <- msg
@@ -105,4 +115,13 @@ func (l *local) Subscribe(route string) (<-chan *listener.Msg, string, error) {
 	}
 
 	return ch, id.String(), nil
+}
+
+func (l *local) Close() error {
+
+	l.r.Close()
+	l.cancel()
+	l.b.Close()
+
+	return nil
 }

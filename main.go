@@ -1,54 +1,101 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/pkg/profile"
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	grpc_node "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("\n%+v\n", m)
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+	fmt.Println()
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
+}
+
 func main() {
-	var err = start()
-	if err != nil {
-		// TODO: need to wrap errors
-		log.Fatalln("err start:", err)
-	}
+	defer profile.Start(profile.GoroutineProfile, profile.ProfilePath("profile.p")).Stop()
+
+	// go func() {
+	// 	for {
+	// 		PrintMemUsage()
+	// 		runtime.GC()
+
+	// 		time.Sleep(2 * time.Second)
+	// 	}
+	// }()
+
+	start()
+	// var err = start()
+	// if err != nil {
+	// 	// TODO: need to wrap errors
+	// 	log.Fatalln("err start:", err)
+	// }
 }
 
 // Get preferred outbound ip of this machine
-func getOutboundIP() net.IP {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
+func getOutboundIP(host, port string) (net.IP, error) {
+	if host == "" {
+		host = "8.8.8.8"
+		port = "80"
 	}
+
+	conn, err := net.Dial("udp", net.JoinHostPort(host, port))
+	if err != nil {
+		return nil, err
+	}
+
 	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return nil, errors.New("localAddr was not a *net.UDPAddr")
+	}
 
-	return localAddr.IP
+	return localAddr.IP, nil
 }
 
 func start() error {
 	const (
-		port        = 5001
+		host        = ""
+		port        = "5001"
 		mb          = 1024 * 1024
 		everySecond = 1 * time.Second
 		maxMsgMB    = 100
 		maxMsgSize  = maxMsgMB * mb
 	)
 
-	var ip = getOutboundIP()
+	var (
+		ip, err = getOutboundIP(host, port)
+	)
 
-	l, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	if err != nil {
+		return err
+	}
+
+	l, err := net.Listen("tcp", net.JoinHostPort(host, port))
 	if err != nil {
 		return err
 	}
@@ -57,15 +104,13 @@ func start() error {
 	var mmshLen = strconv.Itoa(len(maxMsgSizeHeader) + 1)
 
 	log.Printf("%-"+mmshLen+"s: %s\n", "Address", ip.String())
-	log.Printf("%-"+mmshLen+"s: %d\n", "Port", port)
+	log.Printf("%-"+mmshLen+"s: %s\n", "Port", port)
 	log.Printf("%-"+mmshLen+"s: %d MB, %d bytes\n", maxMsgSizeHeader, maxMsgMB, maxMsgSize)
 	fmt.Println()
 
-	var (
-		grpcServer = grpc.NewServer(
-			grpc.MaxSendMsgSize(maxMsgSize),
-			grpc.MaxRecvMsgSize(maxMsgSize),
-		)
+	var grpcServer = grpc.NewServer(
+		grpc.MaxSendMsgSize(maxMsgSize),
+		grpc.MaxRecvMsgSize(maxMsgSize),
 	)
 
 	go ctrlc(grpcServer)
@@ -79,6 +124,12 @@ func start() error {
 	log.Println("Serving gRPC ...")
 	fmt.Println()
 
+	go func() {
+		time.Sleep(12 * time.Second)
+
+		grpcServer.Stop()
+	}()
+
 	return grpcServer.Serve(l)
 }
 
@@ -90,5 +141,5 @@ func ctrlc(s *grpc.Server) {
 	log.Println("Stopping gRPC server ...")
 
 	// TODO: flesh this out a bit more
-	s.GracefulStop()
+	s.Stop()
 }
