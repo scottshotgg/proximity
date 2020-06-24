@@ -211,10 +211,12 @@ func (s *Sink) Attach(lis listener.Listener) error {
 		return errors.New("Cannot subscribe to ID topic")
 	}
 
+	fmt.Println("split", split, route)
+
 	// TODO: need to check this route
 	s.mut.Lock()
 	s.listeners[route] = append(s.listeners[route], lis)
-	s.listeners["_id/"+id] = append(s.listeners[route], lis)
+	s.listeners["_id/"+id] = append(s.listeners["_id/"+id], lis)
 	s.mut.Unlock()
 
 	fmt.Printf("Attached listener, ID:%s\n", id)
