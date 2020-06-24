@@ -2,7 +2,6 @@ package reciever
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -61,6 +60,18 @@ func New(b bus.Bus) recv.Recv {
 		if err != nil {
 			log.Fatalln("err recv:", err)
 		}
+	}(&s)
+
+	go func(s *Sink) {
+		var timer = time.NewTimer(10 * time.Second)
+
+		for {
+			select {
+			case <-timer.C:
+				log.Println("Current network Map:", s.listeners)
+			}
+		}
+
 	}(&s)
 
 	return &s
@@ -211,8 +222,6 @@ func (s *Sink) Attach(lis listener.Listener) error {
 		return errors.New("Cannot subscribe to ID topic")
 	}
 
-	fmt.Println("split", split, route)
-
 	var topics = []string{
 		// TODO: check whether they have ignored the ID topic
 		// Listen to the ID
@@ -232,8 +241,7 @@ func (s *Sink) Attach(lis listener.Listener) error {
 
 	s.mut.Unlock()
 
-	fmt.Printf("Attached listener, ID:%s\n", id)
-	fmt.Println("Network Map:", s.listeners)
+	log.Printf("Attached listener -\n\tID: %s\n\tTopics: %v\n", id, topics)
 
 	return nil
 }
