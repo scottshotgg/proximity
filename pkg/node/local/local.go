@@ -2,6 +2,7 @@ package local
 
 import (
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/google/uuid"
@@ -54,8 +55,8 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 	defer l.lock.Unlock()
 
 	var (
-		ch      = make(chan []byte, 100000000)
-		errChan = make(chan error)
+		ch = make(chan []byte, 100000000)
+		// errChan = make(chan error)
 	)
 
 	go func() {
@@ -68,7 +69,7 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 				})
 
 				if err != nil {
-					errChan <- err
+					log.Fatalln("err l.b.Insert:", err)
 				}
 			}
 		}

@@ -27,7 +27,7 @@ func TestP2P(t *testing.T) {
 	}
 
 	// Subscribe to the route
-	sub, err := n.Subscribe(route)
+	sub, _, err := n.Subscribe(route)
 	if err != nil {
 		log.Fatalln("n.Subscribe")
 	}

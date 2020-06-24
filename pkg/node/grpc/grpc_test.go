@@ -84,7 +84,7 @@ func TestP2P(t *testing.T) {
 
 		for {
 			err = pub.Send(&buffs.PublishReq{
-				Route:    "a",
+				Routes:   []string{"a"},
 				Contents: []byte(strings.Repeat("a", 0)),
 			})
 
@@ -106,8 +106,7 @@ func TestP2P(t *testing.T) {
 	var client2 = buffs.NewNodeClient(conn2)
 
 	sub2, err := client2.Subscribe(context.Background(), &buffs.SubscribeReq{
-		Id:    "something_here",
-		Route: "a",
+		Topics: []string{"a"},
 	})
 
 	if err != nil {
