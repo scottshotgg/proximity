@@ -50,7 +50,7 @@ func (s *Source) Close() error {
 }
 
 func (s *Source) Send(msg *listener.Msg) error {
-	var err error
+	// var err error
 
 	select {
 	case <-s.ctx.Done():
@@ -59,9 +59,10 @@ func (s *Source) Send(msg *listener.Msg) error {
 
 	default:
 		if !s.closed {
-			err = s.b.Insert(msg)
+			go s.b.Insert(msg)
+			// err =
 		}
 	}
 
-	return err
+	return nil
 }

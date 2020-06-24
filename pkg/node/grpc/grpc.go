@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"io"
+	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	"github.com/scottshotgg/proximity/pkg/node"
@@ -69,28 +70,34 @@ func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeSe
 
 	var errChan = make(chan error)
 
-	go func() {
-		for {
-			select {
-			case msg := <-sub:
-				err = srv.Send(&buffs.SubscribeRes{
-					Message: &buffs.Message{
-						Contents: msg.Contents,
-					},
-				})
+	var wg = &sync.WaitGroup{}
 
-				if err != nil {
-					if err == io.EOF {
-						errChan <- nil
-					} else {
-						errChan <- err
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+
+		go func() {
+			for {
+				select {
+				case msg := <-sub:
+					err = srv.Send(&buffs.SubscribeRes{
+						Message: &buffs.Message{
+							Contents: msg.Contents,
+						},
+					})
+
+					if err != nil {
+						if err == io.EOF {
+							errChan <- nil
+						} else {
+							errChan <- err
+						}
+
+						return
 					}
-
-					return
 				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return <-errChan
 }

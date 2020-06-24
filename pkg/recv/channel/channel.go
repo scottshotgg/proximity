@@ -59,12 +59,17 @@ func New(ctx context.Context, b bus.Bus) recv.Recv {
 		b:         b,
 	}
 
-	go func(s *Sink) {
-		var err = s.recv()
-		if err != nil {
-			log.Fatalln("err recv:", err)
-		}
-	}(&s)
+	var wg = &sync.WaitGroup{}
+
+	for i := 0; i < 10; i++ {
+		go func(s *Sink) {
+			defer wg.Done()
+			var err = s.recv()
+			if err != nil {
+				log.Fatalln("err recv:", err)
+			}
+		}(&s)
+	}
 
 	go func(s *Sink) {
 		var timer = time.NewTimer(10 * time.Second)
@@ -124,35 +129,23 @@ func (s *Sink) recv() error {
 	var msgChan = make(chan *listener.Msg, 100)
 
 	go func() {
-		var wg = &sync.WaitGroup{}
+		for {
+			select {
+			case <-s.ctx.Done():
+				close(msgChan)
+				return
 
-		for i := 0; i < 1; i++ {
-			wg.Add(1)
+			default:
+			}
+			// time.Sleep(500 * time.Millisecond)
 
-			go func() {
-				defer wg.Done()
+			var m, err = s.b.Remove()
+			if err != nil {
+				// log.Fatalln("err removing:", err)
+				continue
+			}
 
-				for {
-					select {
-					case <-s.ctx.Done():
-						close(msgChan)
-						return
-
-					default:
-						// time.Sleep(500 * time.Millisecond)
-
-						var m, err = s.b.Remove()
-						if err != nil {
-							// log.Fatalln("err removing:", err)
-							continue
-						}
-
-						msgChan <- m
-					}
-				}
-			}()
-
-			wg.Wait()
+			msgChan <- m
 		}
 	}()
 

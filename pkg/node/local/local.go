@@ -62,7 +62,7 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 	defer l.lock.Unlock()
 
 	var (
-		ch = make(chan []byte, 100)
+		ch = make(chan []byte, 1000)
 		// errChan = make(chan error)
 	)
 
@@ -97,7 +97,7 @@ func (l *local) Subscribe(route string) (chan *listener.Msg, string, error) {
 		return nil, "", err
 	}
 
-	var ch = make(chan *listener.Msg, 100)
+	var ch = make(chan *listener.Msg, 1000)
 
 	lis, err := generic_lis.New(id.String(), route, func(msg *listener.Msg) error {
 		ch <- msg
