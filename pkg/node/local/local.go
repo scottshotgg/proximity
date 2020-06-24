@@ -13,7 +13,6 @@ import (
 	"github.com/scottshotgg/proximity/pkg/recv"
 	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
 	"github.com/scottshotgg/proximity/pkg/sender"
-	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
 )
 
 type local struct {
@@ -42,8 +41,8 @@ func New() node.Node {
 		listeners: map[string]listener.Listener{},
 		// nodes:     map[string]struct{}{},
 
-		b:    b,
-		s:    channel_sender.New(b),
+		b: b,
+		// s:    channel_sender.New(b),
 		r:    channel_recv.New(b),
 		lock: &sync.RWMutex{},
 	}
@@ -63,7 +62,7 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 		for {
 			select {
 			case msg := <-ch:
-				var err = l.s.Send(&listener.Msg{
+				var err = l.b.Insert(&listener.Msg{
 					Route:    route,
 					Contents: msg,
 				})

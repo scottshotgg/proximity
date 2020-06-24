@@ -2,11 +2,11 @@ package grpc
 
 import (
 	"io"
-	"log"
 
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	"github.com/scottshotgg/proximity/pkg/node"
 	"github.com/scottshotgg/proximity/pkg/node/local"
+	"google.golang.org/grpc/metadata"
 )
 
 type grpcNode struct {
@@ -53,9 +53,17 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 
 func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeServer) error {
 	// Subscribe to the route
-	var sub, _, err = g.n.Subscribe(req.GetRoute())
+	var sub, id, err = g.n.Subscribe(req.GetRoute())
 	if err != nil {
-		log.Fatalln("n.Subscribe")
+		return err
+	}
+
+	err = srv.SendHeader(metadata.MD{
+		"id": []string{id},
+	})
+
+	if err != nil {
+		return err
 	}
 
 	var errChan = make(chan error)
