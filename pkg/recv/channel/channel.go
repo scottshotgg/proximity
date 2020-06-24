@@ -207,16 +207,29 @@ func (s *Sink) Attach(lis listener.Listener) error {
 	)
 
 	var split = strings.Split(route, "/")
-	if split[0] == "_id" {
+	if split[0] == RouteID {
 		return errors.New("Cannot subscribe to ID topic")
 	}
 
 	fmt.Println("split", split, route)
 
+	var topics = []string{
+		// TODO: check whether they have ignored the ID topic
+		// Listen to the ID
+		RouteID + "/" + id,
+	}
+
+	if route != RouteNoOp {
+		topics = append(topics, route)
+	}
+
 	// TODO: need to check this route
 	s.mut.Lock()
-	s.listeners[route] = append(s.listeners[route], lis)
-	s.listeners["_id/"+id] = append(s.listeners["_id/"+id], lis)
+
+	for _, topic := range topics {
+		s.listeners[topic] = append(s.listeners[topic], lis)
+	}
+
 	s.mut.Unlock()
 
 	fmt.Printf("Attached listener, ID:%s\n", id)

@@ -58,9 +58,9 @@ func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeSe
 		return err
 	}
 
-	err = srv.SendHeader(metadata.MD{
-		"id": []string{id},
-	})
+	err = srv.SendHeader(metadata.New(map[string]string{
+		"id": id,
+	}))
 
 	if err != nil {
 		return err
