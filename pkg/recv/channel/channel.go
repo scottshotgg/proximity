@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +19,12 @@ const (
 
 	// RouteNoOp ...
 	RouteNoOp = ""
+
+	// RouteID ...
+	RouteID = "_id"
+
+	// RouteMeta is a predefined topic that routes metadata
+	RouteMeta = "_meta"
 )
 
 var (
@@ -120,7 +127,13 @@ func (s *Sink) recv() error {
 }
 
 func (s *Sink) route(msg *listener.Msg) {
-	switch msg.Route {
+	var split = strings.Split(msg.Route, "/")
+	if len(split) < 1 {
+		// We cannot do anything with this message, throw it in a log or something
+		return
+	}
+
+	switch split[0] {
 	case RouteAll:
 		go func(m *listener.Msg) {
 			log.Println("broadcast")
@@ -134,6 +147,9 @@ func (s *Sink) route(msg *listener.Msg) {
 		log.Println("noop")
 		return
 
+	case RouteID:
+		fallthrough
+
 	default:
 		var (
 			listeners []listener.Listener
@@ -145,7 +161,7 @@ func (s *Sink) route(msg *listener.Msg) {
 		s.mut.Unlock()
 
 		if !ok {
-			// log.Println("could not find listener, tossing:", msg.Route)
+			log.Println("could not find listener, tossing:", msg.Route)
 			// TODO: implement default behavior
 			return
 		}
@@ -190,12 +206,19 @@ func (s *Sink) Attach(lis listener.Listener) error {
 		route = lis.Route()
 	)
 
+	var split = strings.Split(route, "/")
+	if split[0] == "_id" {
+		return errors.New("Cannot subscribe to ID topic")
+	}
+
 	// TODO: need to check this route
 	s.mut.Lock()
 	s.listeners[route] = append(s.listeners[route], lis)
+	s.listeners["_id/"+id] = append(s.listeners[route], lis)
 	s.mut.Unlock()
 
 	fmt.Printf("Attached listener, ID:%s\n", id)
+	fmt.Println("Network Map:", s.listeners)
 
 	return nil
 }

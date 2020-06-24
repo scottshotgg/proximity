@@ -30,49 +30,57 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 		return err
 	}
 
-	for {
-		pub <- req.GetContents()
+	var errChan = make(chan error)
 
-		req, err = srv.Recv()
-		if err != nil {
-			if err == io.EOF {
-				return nil
+	go func() {
+		for {
+			pub <- req.GetContents()
+
+			req, err = srv.Recv()
+			if err != nil {
+				if err == io.EOF {
+					err = nil
+				}
+
+				errChan <- err
+				return
 			}
-
-			return err
 		}
-	}
+	}()
 
-	return nil
+	return <-errChan
 }
 
 func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeServer) error {
 	// Subscribe to the route
-	var sub, err = g.n.Subscribe(req.GetRoute())
+	var sub, _, err = g.n.Subscribe(req.GetRoute())
 	if err != nil {
 		log.Fatalln("n.Subscribe")
 	}
 
-	// go func() {
-	for {
-		select {
-		case msg := <-sub:
-			err = srv.Send(&buffs.SubscribeRes{
-				Message: &buffs.Message{
-					Contents: msg.Contents,
-				},
-			})
+	var errChan = make(chan error)
 
-			if err != nil {
-				if err == io.EOF {
-					return nil
+	go func() {
+		for {
+			select {
+			case msg := <-sub:
+				err = srv.Send(&buffs.SubscribeRes{
+					Message: &buffs.Message{
+						Contents: msg.Contents,
+					},
+				})
+
+				if err != nil {
+					if err == io.EOF {
+						err = nil
+					}
+
+					errChan <- err
+					return
 				}
-
-				return err
 			}
 		}
-	}
-	// }()
+	}()
 
-	return nil
+	return <-errChan
 }

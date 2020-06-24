@@ -2,7 +2,6 @@ package local
 
 import (
 	"errors"
-	"log"
 	"sync"
 
 	"github.com/google/uuid"
@@ -32,6 +31,10 @@ type local struct {
 	lock *sync.RWMutex
 }
 
+var (
+	ErrIDTaken = errors.New("ID already taken")
+)
+
 func New() node.Node {
 	var b = channel_bus.New(100)
 
@@ -46,11 +49,15 @@ func New() node.Node {
 	}
 }
 
+// func (l *local) Publish(route string) (chan<- []byte, <-chan error) {
 func (l *local) Publish(route string) (chan<- []byte, error) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	var ch = make(chan []byte, 100000000)
+	var (
+		ch      = make(chan []byte, 100000000)
+		errChan = make(chan error)
+	)
 
 	go func() {
 		for {
@@ -60,8 +67,9 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 					Route:    route,
 					Contents: msg,
 				})
+
 				if err != nil {
-					log.Fatalln("err l.s.Send:", err)
+					errChan <- err
 				}
 			}
 		}
@@ -70,17 +78,13 @@ func (l *local) Publish(route string) (chan<- []byte, error) {
 	return ch, nil
 }
 
-var (
-	ErrIDTaken = errors.New("ID already taken")
-)
-
-func (l *local) Subscribe(route string) (<-chan *listener.Msg, error) {
+func (l *local) Subscribe(route string) (<-chan *listener.Msg, string, error) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
 	var id, err = uuid.NewRandom()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var ch = make(chan *listener.Msg, 100000000)
@@ -92,13 +96,13 @@ func (l *local) Subscribe(route string) (<-chan *listener.Msg, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	err = l.r.Attach(lis)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return ch, nil
+	return ch, id.String(), nil
 }
