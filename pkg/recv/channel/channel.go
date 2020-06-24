@@ -135,7 +135,15 @@ func (s *Sink) route(msg *listener.Msg) {
 		return
 
 	default:
-		var listeners, ok = s.listeners[msg.Route]
+		var (
+			listeners []listener.Listener
+			ok        bool
+		)
+
+		s.mut.Lock()
+		listeners, ok = s.listeners[msg.Route]
+		s.mut.Unlock()
+
 		if !ok {
 			// log.Println("could not find listener, tossing:", msg.Route)
 			// TODO: implement default behavior
@@ -183,17 +191,9 @@ func (s *Sink) Attach(lis listener.Listener) error {
 	)
 
 	// TODO: need to check this route
-	var r, _ = s.listeners[route]
-	// if !ok {
-	// 	// If we didn't find it
-	// 	// s.listeners[route] =
-	// 	r = []*Listener{lis}
-	// } else {
-	// 	// If we did find it
-	// 	r = append(r, lis)
-	// }
-
-	s.listeners[route] = append(r, lis)
+	s.mut.Lock()
+	s.listeners[route] = append(s.listeners[route], lis)
+	s.mut.Unlock()
 
 	fmt.Printf("Attached listener, ID:%s\n", id)
 
