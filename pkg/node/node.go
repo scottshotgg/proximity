@@ -1,10 +1,8 @@
 package node
 
-// TODO: change Node to be an interface
+import "github.com/scottshotgg/proximity/pkg/listener"
 
-type (
-	Node interface {
-		Send() error
-		Attach() error
-	}
-)
+type Node interface {
+	Publish(route string) (chan<- []byte, error)
+	Subscribe(route string) (<-chan *listener.Msg, error)
+}

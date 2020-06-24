@@ -1,49 +1,78 @@
 package grpc
 
 import (
+	"io"
+	"log"
 
-	// grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-
-	// grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
-
-	// grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-
-	"github.com/scottshotgg/proximity/pkg/bus"
-	channel_bus "github.com/scottshotgg/proximity/pkg/bus/channel"
-	"github.com/scottshotgg/proximity/pkg/listener"
-	"github.com/scottshotgg/proximity/pkg/recv"
-	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
-	"github.com/scottshotgg/proximity/pkg/sender"
-	channel_sender "github.com/scottshotgg/proximity/pkg/sender/channel"
-	"google.golang.org/grpc"
+	"github.com/scottshotgg/proximity/pkg/buffs"
+	"github.com/scottshotgg/proximity/pkg/node"
+	"github.com/scottshotgg/proximity/pkg/node/local"
 )
 
-type (
-	Node struct {
-		b          bus.Bus
-		s          sender.Sender
-		r          recv.Recv
-		listeners  map[string]listener.Listener
-		grpcServer *grpc.Server
-		nodes      map[string]struct{}
+type grpcNode struct {
+	n node.Node
+}
+
+func New() *grpcNode {
+	return &grpcNode{
+		n: local.New(),
 	}
-)
+}
 
-/*
-	Send(Node_SendServer) error
-	Attach(*AttachReq, Node_AttachServer) error
-*/
-
-// TODO: make something here that takes the individual components
-func New() *Node {
-	var b = channel_bus.New(100)
-
-	return &Node{
-		listeners: map[string]listener.Listener{},
-		nodes:     map[string]struct{}{},
-
-		b: b,
-		s: channel_sender.New(b),
-		r: channel_recv.New(b),
+func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
+	var req, err = srv.Recv()
+	if err != nil {
+		return err
 	}
+
+	pub, err := g.n.Publish(req.GetRoute())
+	if err != nil {
+		return err
+	}
+
+	for {
+		pub <- req.GetContents()
+
+		req, err = srv.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeServer) error {
+	// Subscribe to the route
+	var sub, err = g.n.Subscribe(req.GetRoute())
+	if err != nil {
+		log.Fatalln("n.Subscribe")
+	}
+
+	// go func() {
+	for {
+		select {
+		case msg := <-sub:
+			err = srv.Send(&buffs.SubscribeRes{
+				Message: &buffs.Message{
+					Contents: msg.Contents,
+				},
+			})
+
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+
+				return err
+			}
+		}
+	}
+	// }()
+
+	return nil
 }

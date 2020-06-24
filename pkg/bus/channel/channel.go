@@ -2,9 +2,11 @@ package channel
 
 import (
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/bus"
+	"github.com/scottshotgg/proximity/pkg/listener"
 )
 
 var (
@@ -19,9 +21,11 @@ type (
 	// Channel ...
 	Channel struct {
 		closed bool
-		q      chan []byte
+		q      chan *listener.Msg
 		mut    *sync.RWMutex
 		once   sync.Once
+
+		// topics map[string]chan *listener.Msg
 	}
 )
 
@@ -37,58 +41,82 @@ func (c *Channel) Close() error {
 	c.mut.Unlock()
 
 	c.once.Do(func() {
-		close(c.q)
+		// close(c.q)
+		log.Fatalln("close is not implemented")
 	})
 
 	return nil
 }
 
 // Insert ...
-func (c *Channel) Insert(msg []byte) error {
+func (c *Channel) Insert(msg *listener.Msg) error {
 	// c.mut.Lock()
 
-	if c.closed {
-		// c.mut.Unlock()
-		return errClosed
-	}
+	// if c.closed {
+	// 	// c.mut.Unlock()
+	// 	return errClosed
+	// }
 
 	// c.mut.Unlock()
 
-	select {
-	case c.q <- msg:
+	//
+	// var ch chan *listener.Msg
+	// var ok bool
 
-		// default:
-		// 	return errChannelFull
-	}
+	// c.mut.RLock()
+	// ch, ok = c.topics[msg.Route]
+	// c.mut.RUnlock()
+
+	// if !ok {
+	// 	c.mut.Lock()
+	// 	ch = make(chan *listener.Msg, 100000)
+	// 	c.topics[msg.Route] = ch
+	// 	c.mut.Unlock()
+	// }
+
+	// ch <- msg
+	//
+
+	c.q <- msg
+
+	// select {
+	// case c.q <- msg:
+
+	// 	// default:
+	// 	// 	return errChannelFull
+	// }
 
 	return nil
 }
 
 // Remove ...
-func (c *Channel) Remove() ([]byte, error) {
-	c.mut.RLock()
+func (c *Channel) Remove() (*listener.Msg, error) {
+	// c.mut.RLock()
 
-	if c.closed {
-		c.mut.RUnlock()
-		return nil, errClosed
-	}
+	// if c.closed {
+	// 	c.mut.RUnlock()
+	// 	return nil, errClosed
+	// }
 
-	c.mut.RUnlock()
+	// c.mut.RUnlock()
 
-	select {
-	case msg := <-c.q:
-		return msg, nil
+	return <-c.q, nil
 
-		// default:
-		// 	// Still need to analyze when this edge case could ever be hit
-		// 	return nil, errRecieve
-	}
+	// select {
+	// case msg := <-c.q:
+	// 	return msg, nil
+
+	// 	// default:
+	// 	// 	// Still need to analyze when this edge case could ever be hit
+	// 	// 	return nil, errRecieve
+	// }
 }
 
 // New ...
 func New(size int) bus.Bus {
 	return &Channel{
-		q:   make(chan []byte, size),
+		q: make(chan *listener.Msg, size),
+		// topics: map[string]chan *listener.Msg{},
 		mut: &sync.RWMutex{},
 	}
 }

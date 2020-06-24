@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/scottshotgg/proximity/pkg/bus"
+	"github.com/scottshotgg/proximity/pkg/listener"
 	"github.com/scottshotgg/proximity/pkg/sender"
 )
 
@@ -44,6 +45,6 @@ func (s *Source) Close() error {
 	return nil
 }
 
-func (s *Source) Send(msg []byte) error {
+func (s *Source) Send(msg *listener.Msg) error {
 	return s.b.Insert(msg)
 }

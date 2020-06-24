@@ -3,40 +3,25 @@ syntax = "proto3";
 package buffs;
 
 message Message {
+  bytes contents = 1;
+}
+
+message PublishReq {
   string route = 1;
-  string contents = 2;
+  bytes contents = 2;
 }
 
-message SendReq {
-  Message msg = 1;
+message PublishRes {}
+
+message SubscribeReq {
+  string route = 1;
 }
 
-message SendRes {}
-
-message AttachReq {
-  // id is a requested ID only; no gaurantee
-  string id = 1;
-
-  // route is a requested route; the server can kick it back
-  string route = 2;
-}
-
-message AttachRes {
+message SubscribeRes {
   Message message = 1;
 }
 
-message DiscoverReq {
-  // TODO: this may need to be changed to clients, listeners, and nodes or something; a map of network maps? idk if getting too complicated
-  // string node = 1;
-}
-
-message DiscoverRes {
-  // TODO: this may need to be changed to clients, listeners, and nodes or something; a map of network maps? idk if getting too complicated
-  repeated string nodes = 1;
-}
-
 service Node {
-  rpc Send(stream SendReq) returns (SendRes);
-  rpc Attach(AttachReq) returns (stream AttachRes);
-  rpc Discover(DiscoverReq) returns (DiscoverRes);
+  rpc Publish(stream PublishReq) returns (PublishRes);
+  rpc Subscribe(SubscribeReq) returns (stream SubscribeRes);
 }

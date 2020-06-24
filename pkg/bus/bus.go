@@ -1,10 +1,12 @@
 package bus
 
+import "github.com/scottshotgg/proximity/pkg/listener"
+
 type (
 	// Bus ...
 	Bus interface {
-		Insert(msg []byte) error
-		Remove() ([]byte, error)
+		Insert(msg *listener.Msg) error
+		Remove() (*listener.Msg, error)
 
 		Close() error
 	}

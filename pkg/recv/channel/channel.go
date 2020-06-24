@@ -1,7 +1,6 @@
 package reciever
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -85,7 +84,7 @@ func (s *Sink) Close() error {
 // TODO: this needs to be a background function
 // Recv ...
 func (s *Sink) recv() error {
-	var msgChan = make(chan []byte, 2000000)
+	var msgChan = make(chan *listener.Msg, 2000000)
 
 	go func() {
 		for {
@@ -108,53 +107,48 @@ func (s *Sink) recv() error {
 	for {
 		// Put all below into another worker func or something
 
-		var msg listener.Msg
-
 		select {
 		case m := <-msgChan:
-			var err = json.Unmarshal([]byte(m), &msg)
-			if err != nil {
-				log.Fatalln("err unmarshal", err)
-				// TODO: handle
-				return err
-			}
+			s.route(m)
 
 		// TODO: timeout, this may be better as a context
 		case <-time.After(1 * time.Second):
 			// log.Println("err timeout")
 			continue
 		}
+	}
+}
 
-		switch msg.Route {
-		case RouteAll:
-			go func(m *listener.Msg) {
-				log.Println("broadcast")
-				var err = s.broadcast(m)
+func (s *Sink) route(msg *listener.Msg) {
+	switch msg.Route {
+	case RouteAll:
+		go func(m *listener.Msg) {
+			log.Println("broadcast")
+			var err = s.broadcast(m)
+			if err != nil {
+				log.Println("err broadbasting", err)
+			}
+		}(msg)
+
+	case RouteNoOp:
+		log.Println("noop")
+		return
+
+	default:
+		var listeners, ok = s.listeners[msg.Route]
+		if !ok {
+			// log.Println("could not find listener, tossing:", msg.Route)
+			// TODO: implement default behavior
+			return
+		}
+
+		for _, l := range listeners {
+			go func(l listener.Listener) {
+				var err = l.Handle(msg)
 				if err != nil {
-					log.Println("err broadbasting", err)
+					// TODO: do something here... maybe internally queue?
 				}
-			}(&msg)
-
-		case RouteNoOp:
-			log.Println("noop")
-			continue
-
-		default:
-			var listeners, ok = s.listeners[msg.Route]
-			if !ok {
-				log.Println("could not find listener, tossing")
-				// TODO: implement default behavior
-				continue
-			}
-
-			for _, l := range listeners {
-				go func(l listener.Listener) {
-					var err = l.Handle(&msg)
-					if err != nil {
-						// TODO: do something here... maybe internally queue?
-					}
-				}(l)
-			}
+			}(l)
 		}
 	}
 }

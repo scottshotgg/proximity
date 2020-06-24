@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package buffs;
-
-message Message {
-  string route = 1;
-  string contents = 2;
-}

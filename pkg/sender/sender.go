@@ -1,5 +1,7 @@
 package sender
 
+import "github.com/scottshotgg/proximity/pkg/listener"
+
 type (
 	// Sender ...
 	Sender interface {
@@ -8,6 +10,6 @@ type (
 
 		// Discover(nodes []string) ([]string, error)
 
-		Send(msg []byte) error
+		Send(msg *listener.Msg) error
 	}
 )

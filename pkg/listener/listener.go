@@ -12,6 +12,6 @@ type (
 	Msg struct {
 		// TODO: Think of something better later
 		Route    string
-		Contents string
+		Contents []byte
 	}
 )
