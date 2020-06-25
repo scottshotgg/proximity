@@ -2,6 +2,8 @@ package local
 
 import (
 	"errors"
+	"sync"
+	"time"
 )
 
 type Local struct {
@@ -20,7 +22,7 @@ type Local struct {
 	joiners chan *Joiner
 	input   chan *Msg
 
-	// lock *sync.RWMutex
+	lock *sync.RWMutex
 }
 
 type Msg struct {
@@ -52,7 +54,7 @@ func New() *Local {
 		// ctx:    ctx,
 		// cancel: cancel,
 		// r:      channel_recv.New(ctx, b),
-		// lock:   &sync.RWMutex{},
+		lock:  &sync.RWMutex{},
 		input: make(chan *Msg, chanSize),
 
 		joiners: make(chan *Joiner, chanSize),
@@ -83,24 +85,35 @@ func (l *Local) Stream() chan<- *Msg {
 }
 
 func (l *Local) eventLoop() {
-	for {
-		select {
-		// Check if anyone wants to join
-		case j := <-l.joiners:
-			l.listeners[j.Route] = append(l.listeners[j.Route], j.Output)
+	go func() {
+		for {
+			select {
+			// Check if anyone wants to join
+			case j := <-l.joiners:
+				l.lock.Lock()
+				l.listeners[j.Route] = append(l.listeners[j.Route], j.Output)
+				l.lock.Unlock()
+			}
 
-		// Process the incoming messages
-		case msg := <-l.input:
-			// var listeners, ok = l.listeners[msg.Route]
-			// if !ok {
-			// 	continue
-			// }
+			time.Sleep(1 * time.Second)
+		}
+	}()
 
-			for _, listener := range l.listeners[msg.Route] {
-				// go func(l chan *Msg) {
-				listener <- msg
-				// }(listener)
+	go func() {
+		for {
+			select {
+			// Process the incoming messages
+			case msg := <-l.input:
+				l.lock.RLock()
+				var listeners = l.listeners[msg.Route]
+				l.lock.RUnlock()
+
+				for _, listener := range listeners {
+					// go func(l chan *Msg) {
+					listener <- msg
+					// }(listener)
+				}
 			}
 		}
-	}
+	}()
 }

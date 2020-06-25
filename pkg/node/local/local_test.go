@@ -41,15 +41,32 @@ func TestP2P(t *testing.T) {
 	// 	go sender(l)
 	// }
 
-	go sender(l)
-	recver(l)
+	go recver(l)
+	// go sender(l)
+
+	sender(l)
 }
 
 func sender(l *local.Local) {
+	// var i int
+
+	// go func() {
+	// 	for {
+	// 		if i == 1000000000 {
+	// 			return
+	// 		}
+
+	// 		fmt.Println("i:", i)
+	// 		fmt.Println("Percent:", math.Round(100*float64(i)/float64(1000000000))/100)
+
+	// 		time.Sleep(2 * time.Second)
+	// 	}
+	// }()
+
+	// for ; i < 1000000000; i++ {
 	for {
 		l.Send(&local.Msg{
-			Route:    "a",
-			Contents: contents,
+			Route: "a",
 		})
 
 		// time.Sleep(200 * time.Millisecond)
@@ -69,9 +86,12 @@ func recver(l *local.Local) {
 	var ch = l.Join("a")
 
 	for {
-		select {
-		case _ = <-ch:
-			recvcounter.Incr(1)
-		}
+		// select {
+		<-ch
+		recvcounter.Incr(1)
+
+		// case <-time.After(1 * time.Second):
+		// 	return
+		// }
 	}
 }
