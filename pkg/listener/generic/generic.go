@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	handler = func(msg *listener.Msg) error
+	handler func(msg *listener.Msg) error
 
 	Generic struct {
 		id     string
