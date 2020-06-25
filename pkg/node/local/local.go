@@ -1,127 +1,106 @@
 package local
 
 import (
-	"context"
 	"errors"
-	"log"
-	"sync"
-
-	"github.com/google/uuid"
-	"github.com/scottshotgg/proximity/pkg/bus"
-	channel_bus "github.com/scottshotgg/proximity/pkg/bus/channel"
-	"github.com/scottshotgg/proximity/pkg/listener"
-	generic_lis "github.com/scottshotgg/proximity/pkg/listener/generic"
-	"github.com/scottshotgg/proximity/pkg/node"
-	"github.com/scottshotgg/proximity/pkg/recv"
-	channel_recv "github.com/scottshotgg/proximity/pkg/recv/channel"
 )
 
-type local struct {
-	b bus.Bus
-	// s         sender.Sender
-	r         recv.Recv
-	listeners map[string]listener.Listener
-	// grpcServer *grpc.Server
-	nodes  map[string]struct{}
-	ctx    context.Context
-	cancel context.CancelFunc
-	closed bool
+type Local struct {
+	// b         bus.Bus
+	// r         recv.Recv
+	listeners map[string][]chan *Msg
+	// nodes     map[string]struct{}
+	// ctx       context.Context
+	// cancel    context.CancelFunc
+	// closed    bool
 
 	// bus chan []byte
 
 	// routes map[string]map[string]chan []byte
 
-	lock *sync.RWMutex
+	joiners chan *Joiner
+	input   chan *Msg
+
+	// lock *sync.RWMutex
+}
+
+type Msg struct {
+	Route    string
+	Contents []byte
+}
+
+type Joiner struct {
+	Route  string
+	Output chan *Msg
 }
 
 var (
 	ErrIDTaken = errors.New("ID already taken")
 )
 
-func New() node.Node {
-	var ctx, cancel = context.WithCancel(context.Background())
+const chanSize = 1000
 
-	var b = channel_bus.New(ctx, 100)
+func New() *Local {
+	// var ctx, cancel = context.WithCancel(context.Background())
 
-	return &local{
-		listeners: map[string]listener.Listener{},
+	// var b = channel_bus.New(ctx, 1000)
+
+	var l = &Local{
+		listeners: map[string][]chan *Msg{},
 		// nodes:     map[string]struct{}{},
 
-		b: b,
-		// s:    channel_sender.New(ctx, b),
-		ctx:    ctx,
-		cancel: cancel,
-		r:      channel_recv.New(ctx, b),
-		lock:   &sync.RWMutex{},
+		// b:      b,
+		// ctx:    ctx,
+		// cancel: cancel,
+		// r:      channel_recv.New(ctx, b),
+		// lock:   &sync.RWMutex{},
+		input: make(chan *Msg, chanSize),
+
+		joiners: make(chan *Joiner, chanSize),
 	}
+
+	go l.eventLoop()
+
+	return l
 }
 
-// func (l *local) Publish(route string) (chan<- []byte, <-chan error) {
-func (l *local) Publish(route string) (chan<- []byte, error) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+func (l *Local) Join(route string) <-chan *Msg {
+	var ch = make(chan *Msg, chanSize)
 
-	var (
-		ch = make(chan []byte, 100)
-		// errChan = make(chan error)
-	)
+	l.joiners <- &Joiner{
+		Route:  route,
+		Output: ch,
+	}
 
-	go func() {
-		for {
-			select {
-			case <-l.ctx.Done():
-				return
+	return ch
+}
 
-			case msg := <-ch:
-				var err = l.b.Insert(&listener.Msg{
-					Route:    route,
-					Contents: msg,
-				})
+func (l *Local) Send(m *Msg) {
+	l.input <- m
+}
 
-				if err != nil {
-					log.Fatalln("err l.b.Insert:", err)
-				}
+func (l *Local) Stream() chan<- *Msg {
+	return l.input
+}
+
+func (l *Local) eventLoop() {
+	for {
+		select {
+		// Check if anyone wants to join
+		case j := <-l.joiners:
+			l.listeners[j.Route] = append(l.listeners[j.Route], j.Output)
+
+		// Process the incoming messages
+		case msg := <-l.input:
+			// var listeners, ok = l.listeners[msg.Route]
+			// if !ok {
+			// 	continue
+			// }
+
+			for _, listener := range l.listeners[msg.Route] {
+				// go func(l chan *Msg) {
+				listener <- msg
+				// }(listener)
 			}
 		}
-	}()
-
-	return ch, nil
-}
-
-func (l *local) Subscribe(route string) (chan *listener.Msg, string, error) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-
-	var id, err = uuid.NewRandom()
-	if err != nil {
-		return nil, "", err
 	}
-
-	var ch = make(chan *listener.Msg, 100)
-
-	lis, err := generic_lis.New(id.String(), route, func(msg *listener.Msg) error {
-		ch <- msg
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, "", err
-	}
-
-	err = l.r.Attach(lis)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return ch, id.String(), nil
-}
-
-func (l *local) Close() error {
-
-	l.r.Close()
-	l.cancel()
-	l.b.Close()
-
-	return nil
 }

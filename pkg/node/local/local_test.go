@@ -1,9 +1,7 @@
 package local_test
 
 import (
-	"context"
-	"log"
-	"sync"
+	"fmt"
 	"testing"
 	"time"
 
@@ -11,110 +9,69 @@ import (
 
 	"github.com/paulbellamy/ratecounter"
 	"github.com/scottshotgg/proximity/pkg/node/local"
-
 	// "go.uber.org/goleak"
-	"github.com/pkg/profile"
 )
 
+var recvcounter = ratecounter.NewRateCounter(1 * time.Second)
+var sendcounter = ratecounter.NewRateCounter(1 * time.Second)
+
+var contents []byte
+
 func TestP2P(t *testing.T) {
-	defer profile.Start().Stop()
-	// go http.ListenAndServe("0.0.0.0:8080", nil)
-
-	// defer goleak.VerifyNone(t)
-
-	const (
-		route   = "a"
-		testMsg = ""
-	)
-
-	var (
-		n        = local.New()
-		pub, err = n.Publish(route)
-	)
-
-	if err != nil {
-		log.Fatalln("n.Publish")
-	}
-
-	// Subscribe to the route
-	sub, _, err := n.Subscribe(route)
-	if err != nil {
-		log.Fatalln("n.Subscribe")
-	}
-
-	const everySecond = 1 * time.Second
-
-	var (
-		recvcounter = ratecounter.NewRateCounter(everySecond)
-		sendcounter = ratecounter.NewRateCounter(everySecond)
-		timer       = time.NewTimer(everySecond)
-		testTime    = 20 * everySecond
-	)
-
-	var ctx, cancel = context.WithTimeout(context.Background(), testTime)
-	defer cancel()
+	var l = local.New()
 
 	go func() {
+		var timer = time.NewTimer(1 * time.Second)
+
 		for {
 			select {
 			case <-timer.C:
-				log.Println("Recv:", recvcounter.Rate())
-				log.Println("Send:", sendcounter.Rate())
-				timer.Reset(everySecond)
+				fmt.Println("Recv Rate:", recvcounter.Rate())
+				fmt.Println("Send Rate:", sendcounter.Rate())
 
-			case <-ctx.Done():
-				timer.Stop()
-				return
+				timer.Reset(1 * time.Second)
 			}
 		}
 	}()
 
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-ctx.Done():
-	// 			return
-	// 		}
-	// 	}
-	// }()
+	// go recver(l)
+	time.Sleep(100 * time.Millisecond)
 
-	var wg = &sync.WaitGroup{}
+	// for i := 0; i < 9; i++ {
+	// 	go sender(l)
+	// }
 
-	wg.Add(2)
+	go sender(l)
+	recver(l)
+}
 
-	go func() {
-		defer wg.Done()
+func sender(l *local.Local) {
+	for {
+		l.Send(&local.Msg{
+			Route:    "a",
+			Contents: contents,
+		})
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
+		// time.Sleep(200 * time.Millisecond)
 
-			// Insert test message
-			case pub <- []byte{}:
-				sendcounter.Incr(1)
-			}
+		// sendcounter.Incr(1)
+
+		// ch <- &local.Msg{
+		// 	Route:    "a",
+		// 	Contents: []byte("hey its me"),
+		// }
+
+		sendcounter.Incr(1)
+	}
+}
+
+func recver(l *local.Local) {
+	var ch = l.Join("a")
+
+	for {
+		select {
+		case _ = <-ch:
+			recvcounter.Incr(1)
 		}
-	}()
-
-	go func() {
-		defer wg.Done()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case <-sub:
-				recvcounter.Incr(1)
-			}
-		}
-	}()
-
-	wg.Wait()
-	cancel()
-
-	// close(pub)
-	n.Close()
-	close(sub)
+	}
 }

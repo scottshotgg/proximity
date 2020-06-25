@@ -134,7 +134,7 @@ func (c *Channel) Remove() (*listener.Msg, error) {
 func New(ctx context.Context, size int) bus.Bus {
 	return &Channel{
 		ctx: ctx,
-		q:   make(chan *listener.Msg),
+		q:   make(chan *listener.Msg, 1000),
 		// topics: map[string]chan *listener.Msg{},
 		mut: &sync.RWMutex{},
 	}
