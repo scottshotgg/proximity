@@ -9,5 +9,5 @@ import (
 
 func Test_HW(t *testing.T) {
 	go server.Start()
-	client.Start()
+	client.Start("localhost:9090")
 }
