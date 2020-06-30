@@ -5,6 +5,8 @@ go 1.14
 require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
+	github.com/inhies/go-bytesize v0.0.0-20151001220322-5990f52c6ad6
+	github.com/micro/go-micro v1.18.0
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/pkg/profile v1.5.0
 	go.uber.org/goleak v1.0.0

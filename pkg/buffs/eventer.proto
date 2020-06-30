@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package buffs;
+
+message Message {
+  bytes contents = 1;
+}
+
+message PublishReq {
+  repeated string routes = 1;
+  bytes contents = 2;
+}
+
+message PublishRes {}
+
+message SubscribeReq {
+  repeated string topics = 1;
+}
+
+message SubscribeRes {
+  Message message = 1;
+}
+
+service Node {
+  rpc Publish(stream PublishReq) returns (PublishRes);
+  rpc Subscribe(SubscribeReq) returns (stream SubscribeRes);
+}

@@ -2,6 +2,7 @@ package events_test
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,22 +11,15 @@ import (
 
 func Test_something(t *testing.T) {
 	var (
-		// sendcounter = ratecounter.NewRateCounter(1 * time.Second)
-		// ratecounter = ratecounter.NewRateCounter(1 * time.Second)
+		e        = events.New()
+		sendSize = 1
+		recvSize = 1
 
-		e = events.New()
-
-		recvCount int64
-		sendCount int64
-
-		// Register top level listener
-		ev, _ = e.Listen("a", "a")
+		recvCounts = make([]int64, recvSize)
+		sendCounts = make([]int64, sendSize)
+		// recvCount int64
+		// sendCount int64
 	)
-
-	// Register ID listener
-	var evv, _ = ev.Listen("something_else", "something_else")
-	var _, chhh1 = evv.Listen("blah", "blah")
-	var _, chhh2 = evv.Listen("blurb", "blurb")
 
 	go func() {
 		var timer = time.NewTimer(1 * time.Second)
@@ -34,15 +28,31 @@ func Test_something(t *testing.T) {
 			select {
 			case <-timer.C:
 				var (
-					rc = recvCount
-					sc = sendCount
+					// rc = recvCount
+					rc = recvCounts
+					// sc = sendCount
+					sc = sendCounts
 				)
 
-				recvCount = 0
-				sendCount = 0
+				recvCounts = make([]int64, recvSize)
+				sendCounts = make([]int64, sendSize)
+				// recvCount = 0
+				// sendCount = 0
 
-				fmt.Println("Recv count:", sc)
-				fmt.Println("Send count:", rc)
+				fmt.Println("Recv count:", rc)
+
+				var sendTotal int64
+
+				if sendSize > 100 {
+					for _, count := range sc {
+						sendTotal += count
+					}
+
+					fmt.Println("Send count:", sendTotal)
+				} else {
+					fmt.Println("Send count:", sc)
+				}
+
 				fmt.Println()
 
 				timer.Reset(1 * time.Second)
@@ -50,42 +60,50 @@ func Test_something(t *testing.T) {
 		}
 	}()
 
-	for i := 0; i < 1; i++ {
-		go func(id int) {
-			for range chhh1 {
-				// fmt.Println("got message for blah")
-				recvCount++
-			}
+	var wg = &sync.WaitGroup{}
 
-			// for range chh {
-			// 	// atomic.AddInt64(&recvCount, 1)
-			// }
-		}(i)
+	for i := 0; i < recvSize; i++ {
+		wg.Add(1)
 
 		go func(id int) {
-			for range chhh2 {
-				// fmt.Println("got message for blurb")
-				recvCount++
-			}
+			defer wg.Done()
 
-			// for range chh {
-			// recvCount++
-			// 	// atomic.AddInt64(&recvCount, 1)
-			// }
+			var ch = e.Listen("a", "a")
+
+			for range ch {
+				recvCounts[id]++
+				// atomic.AddInt64(&recvCount, 1)
+			}
 		}(i)
 	}
 
-	for {
-		var err = e.Handle("a/something_else/", &events.Msg{
-			Route: "a/something_else/",
-		})
+	time.Sleep(100 * time.Millisecond)
 
-		if err == nil {
-			sendCount++
-		}
+	for i := 0; i < sendSize; i++ {
+		wg.Add(1)
 
-		// time.Sleep(100 * time.Millisecond)
+		go func(id int) {
+			defer wg.Done()
 
-		// atomic.AddInt64(&sendCount, 1)
+			var err error
+
+			for {
+				err = e.SendMulti([]*events.Msg{
+					{
+						Route: "a",
+					},
+				})
+
+				if err != nil {
+					fmt.Println("err:", err)
+					continue
+				}
+
+				sendCounts[id]++
+				// atomic.AddInt64(&sendCount, 1)
+			}
+		}(i)
 	}
+
+	wg.Wait()
 }
