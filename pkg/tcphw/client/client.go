@@ -8,8 +8,8 @@ import (
 	"sync"
 )
 
-func Start() {
-	serverAddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
+func Start(addr string) {
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
@@ -28,7 +28,7 @@ func Start() {
 func send(serverAddr *net.TCPAddr) {
 	conn, err := net.DialTCP("tcp", nil, serverAddr)
 	if err != nil {
-		log.Fatalln("err ListenTCP:", err)
+		log.Fatalln("err DialTCP:", err)
 	}
 
 	for {

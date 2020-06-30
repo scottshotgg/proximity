@@ -13,7 +13,7 @@ import (
 var total int64
 
 func Start() {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
+	addr, err := net.ResolveTCPAddr("tcp", ":9090")
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
