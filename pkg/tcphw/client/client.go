@@ -18,7 +18,7 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 7; i++ {
 		go send(serverAddr)
 	}
 
@@ -31,7 +31,11 @@ func send(serverAddr *net.TCPAddr) {
 		log.Fatalln("err DialTCP:", err)
 	}
 
+	conn.SetWriteBuffer(64 * 1024)
+
+	var data = strings.Repeat("a", 64*1024)
+
 	for {
-		fmt.Fprintln(conn, strings.Repeat("a", 1*1024*1024))
+		fmt.Fprintln(conn, data)
 	}
 }
