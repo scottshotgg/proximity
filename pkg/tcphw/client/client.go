@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -86,74 +85,31 @@ func send(serverAddr *net.TCPAddr) {
 		log.Fatalln("err DialTCP:", err)
 	}
 
+	// Set the TCP window to 64KB
 	conn.SetWriteBuffer(amount)
 
-	// Subtracting 2 for the newline; 64 chars: aaa...aaa\n
-	// var a = strings.Repeat("a", 62) + "\n"
-	// var b = strings.Repeat("b", 62) + "\n"
-	// var s = "something_here\n"
+	var (
+		line int
 
-	// Repeat that a thousand times: aaa...aaa\n * 1000
-	// var dataa = strings.Repeat(a, KB)
-	// var datas = strings.Repeat(s, 4000)
-	// var _ = datas
-	var line int
+		br   = bufio.NewWriter(conn)
+		a    = strings.Repeat("a", 1) + ":"
+		d    = strings.Repeat(a, KB-1)
+		data = append([]byte(d), '\n')
+	)
 
-	// go func() {
-	// 	time.Sleep(100 * time.Millisecond)
-
-	// 	for i := 0; i < 10; i++ {
-	// 		// for {
-	// 		line, err = fmt.Fprint(conn, datas)
-	// 		if err != nil {
-	// 			log.Fatalln("err fmt.Fprintln:", err)
-	// 		}
-
-	// 		if line != len(datas) {
-	// 			log.Fatalln("wtf", line, len(datas))
-	// 		}
-
-	// 		atomic.AddInt64(&countBytes, int64(line))
-	// 		atomic.AddInt64(&count, 1)
-
-	// 		time.Sleep(10 * time.Millisecond)
-	// 	}
-	// }()
-
-	var br = bufio.NewWriter(conn)
-
-	// var size = 63 * KB
-	var size = rand.Intn(54000) + 10000
-	// fmt.Println("size", size)
-	var data = strings.Repeat("a", size)
-	var d = append([]byte(data), '\n')
-
-	// var sizeString = strconv.Itoa(size)
-	// fmt.Println("sizeString:", len(sizeString))
-	// for i := 0; i < 100; i++ {
 	for {
-
-		// var d = fmt.Sprintf()
-		// // fmt.Println(d)
-
-		// line, err = fmt.Fprintln(conn, data)
-		// line, err = br.WriteString(data + "\n")
-		line, err = br.Write(d)
+		// Write the delimited messages to the buffer
+		line, err = br.Write(data)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
 		}
 
-		if line != len(data)+1 {
-			log.Fatalln("wtf", line, len(data))
+		// Check if the amount sent is the same as the length of the data
+		if line != len(data) {
+			log.Fatalln("wtf dude", line, len(data))
 		}
 
 		atomic.AddInt64(&countBytes, int64(line))
 		atomic.AddInt64(&count, 1)
-
-		// time.Sleep(100 * time.Millisecond)
 	}
-
-	time.Sleep(1 * time.Second)
-
-	conn.Close()
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inhies/go-bytesize"
+	"github.com/scottshotgg/proximity/pkg/node"
 )
 
 var countBytes int64
@@ -85,82 +86,89 @@ const (
 	amount = 64 * KB
 )
 
-func handle(id int, c *net.TCPConn) {
-	// c.SetNoDelay(true)
-	// c.SetKeepAlive(true)
-	c.SetReadBuffer(amount)
-	// c.SetReadDeadline(time.Now().Add(30000000 * time.Second))
+var (
+	msgChan = make(chan []*node.Msg, 1000)
+)
 
-	// var count int64
-	// var ticker = time.NewTicker(1 * time.Second)
+func handle(id int, c *net.TCPConn) {
+	// Set the TCP window to 64KB
+	c.SetReadBuffer(amount)
+
+	var (
+		br = bufio.NewReader(c)
+
+		// This channel amount gives a considerable increase
+		// We can always make it variable at run time based on memory size
+		parseChan = make(chan []byte, 100000)
+	)
+
+	// for i := 0; i < 10; i++ {
+	// 	go func() {
+	// 		for range msgChan {
+	// 		}
+	// 	}()
+	// }
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			// // - Parse the frame for messages; these are delineated with ':' for now
+			// // - Send to workers
+			// // - Update state and send messages
+
+			// // for frame := range sendch {
+			// // fmt.Println(len(strings.Split(string(frame), ":")))
+			// // }
+
+			// // We can definitely make some very simple improvements to
+			// // drastically reduce the allocations here
+			// var delin byte = ':'
+
+			// for frame := range parseChan {
+			// 	var msgs []*node.Msg
+
+			// 	var lastIndex int
+			// 	for i, b := range frame {
+			// 		if b == delin {
+			// 			// - Capture indicies of delineations
+			// 			// - Build Msg array
+			// 			msgs = append(msgs, &node.Msg{
+			// 				Route:    "a",
+			// 				Contents: frame[lastIndex:i],
+			// 			})
+
+			// 			lastIndex = i + 1
+			// 		}
+			// 	}
+
+			// 	msgChan <- msgs
+			// }
+
+			for range parseChan {
+				// var split = strings.Split(string(frame), ":")
+			}
+		}()
+	}
+
+	// var r, w = io.Pipe()
 
 	// go func() {
-	// 	for range ticker.C {
-	// 		var i = count
-	// 		count = 0
-	// 		total += i
+	// 	var msgReader = bufio.NewReader(r)
 
-	// 		fmt.Printf("Count %d: %v\n", id, bytesize.New(float64(i)))
-	// 		// fmt.Println("Total,", total)
+	// 	for {
+	// 		var b, err = msgReader.ReadBytes(':')
+	// 		if err != nil {
+	// 			log.Fatalln("err msgReader.ReadBytes():", err)
+	// 		}
+
+	// 		parseChan <- b
 	// 	}
 	// }()
 
-	var br = bufio.NewReader(c)
-
-	// var size = 1024 * 1024
-	// var line int
-	// var err error
-
-	var sendch = make(chan []byte, 10)
-
-	// for i := 0; i < 10; i++ {
-	go func() {
-		for _ = range sendch {
-			// // var size, err = strconv.Atoi(string(msg[0:5]))
-			// // if err != nil {
-			// // 	log.Fatalln("err strconv.Atoi:", err)
-			// // }
-
-			// fmt.Println("server size:", string(msg[0:5]))
-			// if string(msg[0:5]) == "aaaaa" {
-			// 	log.Fatalln("MESSAGE:", msg)
-			// }
-
-			// time.Sleep(1 * time.Second)
-		}
-	}()
-	// }
+	// var brw = bufio.NewWriter(w)
 
 	for {
-		// var buf = make([]byte, 5)
-		// // buf := make([]byte, size)
-		// // fmt.Println("Size:", br.Buffered())
-		// // fmt.Println("size, length:", br.Size(), br.Buffered())
-
-		// // // if br.Size() > 10000 {
-		// var b, err = br.ReadBytes('\n')
-		// // line, err = io.ReadFull(c, buf)
-		// if err != nil {
-		// 	if err == io.EOF {
-		// 		return
-		// 	}
-
-		// 	log.Fatalln("err ReadString:", err)
-		// }
-
-		// // fmt.Println("server buf size:", string(b))
-
-		// size, err := strconv.Atoi(string(b[:len(b)-1]))
-		// if err != nil {
-		// 	log.Fatalln("err strconv.Atoi:", err)
-		// }
-
-		// fmt.Println("server size:", size)
-
-		// var b = make([]byte, amount)
+		// Read in a 'frame' of messages; these are delineated by newlines
 		b, err := br.ReadBytes('\n')
-
-		// line, err = c.Read(b)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -169,20 +177,12 @@ func handle(id int, c *net.TCPConn) {
 			log.Fatalln("err ReadString:", err)
 		}
 
-		// fmt.Println("line:", line)
+		// brw.Write(b)
 
-		// time.Sleep(1 * time.Second)
-
-		// for range buf {
-		sendch <- b
-		// }
-
-		// strings.Split(string(buf), "\n")
-
-		// time.Sleep(100 * time.Millisecond)
+		// Send to parsers
+		parseChan <- b
 
 		atomic.AddInt64(&countBytes, int64(len(b)))
 		atomic.AddInt64(&count, 1)
-		// }
 	}
 }
