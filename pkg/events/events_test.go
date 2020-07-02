@@ -12,7 +12,7 @@ import (
 func Test_something(t *testing.T) {
 	var (
 		e        = events.New()
-		sendSize = 1
+		sendSize = 1000
 		recvSize = 1
 
 		recvCounts = make([]int64, recvSize)
@@ -38,12 +38,19 @@ func Test_something(t *testing.T) {
 				sendCounts = make([]int64, sendSize)
 				// recvCount = 0
 				// sendCount = 0
-
-				fmt.Println("Recv count:", rc)
-
 				var sendTotal int64
+				var recvTotal int64
 
-				if sendSize > 100 {
+				if recvSize > 1 {
+					for _, count := range rc {
+						recvTotal += count
+					}
+					fmt.Println("Recv count:", recvTotal)
+				} else {
+					fmt.Println("Recv count:", rc)
+				}
+
+				if sendSize > 1 {
 					for _, count := range sc {
 						sendTotal += count
 					}

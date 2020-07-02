@@ -38,9 +38,9 @@ func TestP2P(t *testing.T) {
 	// go recver(l)
 	time.Sleep(100 * time.Millisecond)
 
-	// for i := 0; i < 9; i++ {
-	// 	go sender(l)
-	// }
+	for i := 0; i < 5000000; i++ {
+		go sender(l)
+	}
 
 	go recver(l)
 	// go sender(l)
@@ -64,11 +64,17 @@ func sender(l *local.Local) {
 	// 	}
 	// }()
 
+	var st = l.Stream()
+
 	// for ; i < 1000000000; i++ {
 	for {
-		l.Send(&node.Msg{
+		// l.Send(&node.Msg{
+		// 	Route: "a",
+		// })
+
+		st <- &node.Msg{
 			Route: "a",
-		})
+		}
 
 		// time.Sleep(200 * time.Millisecond)
 

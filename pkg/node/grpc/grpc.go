@@ -21,6 +21,8 @@ func New() *grpcNode {
 }
 
 func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
+	var st = g.n.Stream()
+
 	for {
 		var req, err = srv.Recv()
 		if err != nil {
@@ -33,10 +35,12 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 			return err
 		}
 
-		g.n.Send(&node.Msg{
+		st <- &node.Msg{
 			Route:    req.GetRoutes()[0],
 			Contents: req.GetContents(),
-		})
+		}
+
+		// g.n.Send()
 	}
 }
 

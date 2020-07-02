@@ -108,27 +108,27 @@ func handle(id int, c *net.TCPConn) {
 	var br = bufio.NewReader(c)
 
 	// var size = 1024 * 1024
-	var line int
-	var err error
+	// var line int
+	// var err error
 
-	// var sendch = make(chan []byte, 10)
+	var sendch = make(chan []byte, 10)
 
 	// for i := 0; i < 10; i++ {
-	// 	go func() {
-	// 		for _ = range sendch {
-	// 			// // var size, err = strconv.Atoi(string(msg[0:5]))
-	// 			// // if err != nil {
-	// 			// // 	log.Fatalln("err strconv.Atoi:", err)
-	// 			// // }
+	go func() {
+		for _ = range sendch {
+			// // var size, err = strconv.Atoi(string(msg[0:5]))
+			// // if err != nil {
+			// // 	log.Fatalln("err strconv.Atoi:", err)
+			// // }
 
-	// 			// fmt.Println("server size:", string(msg[0:5]))
-	// 			// if string(msg[0:5]) == "aaaaa" {
-	// 			// 	log.Fatalln("MESSAGE:", msg)
-	// 			// }
+			// fmt.Println("server size:", string(msg[0:5]))
+			// if string(msg[0:5]) == "aaaaa" {
+			// 	log.Fatalln("MESSAGE:", msg)
+			// }
 
-	// 			// time.Sleep(1 * time.Second)
-	// 		}
-	// 	}()
+			// time.Sleep(1 * time.Second)
+		}
+	}()
 	// }
 
 	for {
@@ -137,8 +137,8 @@ func handle(id int, c *net.TCPConn) {
 		// // fmt.Println("Size:", br.Buffered())
 		// // fmt.Println("size, length:", br.Size(), br.Buffered())
 
-		// // if br.Size() > 10000 {
-		// line, err = c.Read(buf)
+		// // // if br.Size() > 10000 {
+		// var b, err = br.ReadBytes('\n')
 		// // line, err = io.ReadFull(c, buf)
 		// if err != nil {
 		// 	if err == io.EOF {
@@ -148,17 +148,17 @@ func handle(id int, c *net.TCPConn) {
 		// 	log.Fatalln("err ReadString:", err)
 		// }
 
-		// fmt.Println("server buf size:", string(buf))
+		// // fmt.Println("server buf size:", string(b))
 
-		// var size, err = strconv.Atoi(string(buf))
+		// size, err := strconv.Atoi(string(b[:len(b)-1]))
 		// if err != nil {
 		// 	log.Fatalln("err strconv.Atoi:", err)
 		// }
 
 		// fmt.Println("server size:", size)
 
-		var b = make([]byte, amount)
-		line, err = br.Read(b)
+		// var b = make([]byte, amount)
+		b, err := br.ReadBytes('\n')
 
 		// line, err = c.Read(b)
 		if err != nil {
@@ -174,14 +174,14 @@ func handle(id int, c *net.TCPConn) {
 		// time.Sleep(1 * time.Second)
 
 		// for range buf {
-		// sendch <- b
+		sendch <- b
 		// }
 
 		// strings.Split(string(buf), "\n")
 
 		// time.Sleep(100 * time.Millisecond)
 
-		atomic.AddInt64(&countBytes, int64(line))
+		atomic.AddInt64(&countBytes, int64(len(b)))
 		atomic.AddInt64(&count, 1)
 		// }
 	}

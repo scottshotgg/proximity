@@ -22,7 +22,7 @@ func New() *Eventer {
 		// handle:    h,
 	}
 
-	e.workers(1)
+	e.workers(25)
 
 	return e
 }

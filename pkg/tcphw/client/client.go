@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -118,22 +120,30 @@ func send(serverAddr *net.TCPAddr) {
 	// 	}
 	// }()
 
-	var size = 64 * KB
-	// var size = rand.Intn(54000) + 10000
+	var br = bufio.NewWriter(conn)
+
+	// var size = 63 * KB
+	var size = rand.Intn(54000) + 10000
 	// fmt.Println("size", size)
 	var data = strings.Repeat("a", size)
+	var d = append([]byte(data), '\n')
+
+	// var sizeString = strconv.Itoa(size)
+	// fmt.Println("sizeString:", len(sizeString))
 	// for i := 0; i < 100; i++ {
 	for {
 
 		// var d = fmt.Sprintf()
 		// // fmt.Println(d)
 
-		line, err = fmt.Fprint(conn, data)
+		// line, err = fmt.Fprintln(conn, data)
+		// line, err = br.WriteString(data + "\n")
+		line, err = br.Write(d)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
 		}
 
-		if line != len(data) {
+		if line != len(data)+1 {
 			log.Fatalln("wtf", line, len(data))
 		}
 
