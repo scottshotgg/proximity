@@ -4,12 +4,14 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/scottshotgg/proximity/pkg/node"
 )
 
 type Local struct {
 	// b         bus.Bus
 	// r         recv.Recv
-	listeners map[string][]chan *Msg
+	listeners map[string][]chan *node.Msg
 	// nodes     map[string]struct{}
 	// ctx       context.Context
 	// cancel    context.CancelFunc
@@ -20,19 +22,14 @@ type Local struct {
 	// routes map[string]map[string]chan []byte
 
 	joiners chan *Joiner
-	input   chan *Msg
+	input   chan *node.Msg
 
 	lock *sync.RWMutex
 }
 
-type Msg struct {
-	Route    string
-	Contents []byte
-}
-
 type Joiner struct {
 	Route  string
-	Output chan *Msg
+	Output chan *node.Msg
 }
 
 var (
@@ -47,7 +44,7 @@ func New() *Local {
 	// var b = channel_bus.New(ctx, 1000)
 
 	var l = &Local{
-		listeners: map[string][]chan *Msg{},
+		listeners: map[string][]chan *node.Msg{},
 		// nodes:     map[string]struct{}{},
 
 		// b:      b,
@@ -55,7 +52,7 @@ func New() *Local {
 		// cancel: cancel,
 		// r:      channel_recv.New(ctx, b),
 		lock:  &sync.RWMutex{},
-		input: make(chan *Msg, chanSize),
+		input: make(chan *node.Msg, chanSize),
 
 		joiners: make(chan *Joiner, chanSize),
 	}
@@ -65,8 +62,8 @@ func New() *Local {
 	return l
 }
 
-func (l *Local) Join(route string) <-chan *Msg {
-	var ch = make(chan *Msg, chanSize)
+func (l *Local) Join(route string) <-chan *node.Msg {
+	var ch = make(chan *node.Msg, chanSize)
 
 	l.joiners <- &Joiner{
 		Route:  route,
@@ -76,11 +73,11 @@ func (l *Local) Join(route string) <-chan *Msg {
 	return ch
 }
 
-func (l *Local) Send(m *Msg) {
+func (l *Local) Send(m *node.Msg) {
 	l.input <- m
 }
 
-func (l *Local) Stream() chan<- *Msg {
+func (l *Local) Stream() chan<- *node.Msg {
 	return l.input
 }
 

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -69,6 +68,9 @@ func TestP2P(t *testing.T) {
 		grpc.MaxCallSendMsgSize(maxMsgSize),
 	)
 
+	var data = []byte{}
+	var routes = []string{"a"}
+
 	go func() {
 		conn, err := grpc.Dial(":5001", grpc.WithInsecure(), defaultOps)
 		if err != nil {
@@ -84,8 +86,8 @@ func TestP2P(t *testing.T) {
 
 		for {
 			err = pub.Send(&buffs.PublishReq{
-				Routes:   []string{"a"},
-				Contents: []byte(strings.Repeat("a", 0)),
+				Routes:   routes,
+				Contents: data,
 			})
 
 			if err != nil {

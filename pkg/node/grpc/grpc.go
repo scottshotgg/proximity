@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"io"
+	"log"
 
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	"github.com/scottshotgg/proximity/pkg/node"
@@ -20,77 +21,52 @@ func New() *grpcNode {
 }
 
 func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
-	var req, err = srv.Recv()
-	if err != nil {
-		return err
-	}
-
-	pub, err := g.n.Publish(req.GetRoutes()[0])
-	if err != nil {
-		return err
-	}
-
-	var errChan = make(chan error)
-
-	go func() {
-		for {
-			pub <- req.GetContents()
-
-			req, err = srv.Recv()
-			if err != nil {
-				if err == io.EOF {
-					errChan <- nil
-				} else {
-					errChan <- err
-				}
-
-				return
+	for {
+		var req, err = srv.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
 			}
-		}
-	}()
 
-	return <-errChan
+			log.Fatalln("err srv.Recv:", err)
+
+			return err
+		}
+
+		g.n.Send(&node.Msg{
+			Route:    req.GetRoutes()[0],
+			Contents: req.GetContents(),
+		})
+	}
 }
 
 func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeServer) error {
 	// Subscribe to the route
-	var sub, id, err = g.n.Subscribe(req.GetTopics()[0])
-	if err != nil {
-		return err
-	}
+	var ch = g.n.Join(req.GetTopics()[0])
 
-	err = srv.SendHeader(metadata.New(map[string]string{
-		"id": id,
+	var err = srv.SendHeader(metadata.New(map[string]string{
+		"id": "id",
 	}))
 
 	if err != nil {
 		return err
 	}
 
-	var errChan = make(chan error)
+	for {
+		select {
+		case msg := <-ch:
+			err = srv.Send(&buffs.SubscribeRes{
+				Message: &buffs.Message{
+					Contents: msg.Contents,
+				},
+			})
 
-	go func() {
-		for {
-			select {
-			case msg := <-sub:
-				err = srv.Send(&buffs.SubscribeRes{
-					Message: &buffs.Message{
-						Contents: msg.Contents,
-					},
-				})
-
-				if err != nil {
-					if err == io.EOF {
-						errChan <- nil
-					} else {
-						errChan <- err
-					}
-
-					return
+			if err != nil {
+				if err == io.EOF {
+					return nil
 				}
+				return err
 			}
 		}
-	}()
-
-	return <-errChan
+	}
 }

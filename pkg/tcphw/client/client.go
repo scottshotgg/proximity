@@ -3,11 +3,9 @@ package client
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -66,7 +64,7 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		go send(serverAddr)
 	}
 
@@ -120,24 +118,22 @@ func send(serverAddr *net.TCPAddr) {
 	// 	}
 	// }()
 
+	var size = 64 * KB
+	// var size = rand.Intn(54000) + 10000
+	// fmt.Println("size", size)
+	var data = strings.Repeat("a", size)
 	// for i := 0; i < 100; i++ {
 	for {
-		// var size = 63 * KB
-		var size = rand.Intn(54000) + 10000
-		// fmt.Println("size", size)
-		var data = strings.Repeat("a", size)
-
-		var sizeString = strconv.Itoa(size)
 
 		// var d = fmt.Sprintf()
 		// // fmt.Println(d)
 
-		line, err = fmt.Fprintf(conn, "%s%s", sizeString, data)
+		line, err = fmt.Fprint(conn, data)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
 		}
 
-		if line != len(data)+len(sizeString) {
+		if line != len(data) {
 			log.Fatalln("wtf", line, len(data))
 		}
 

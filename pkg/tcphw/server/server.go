@@ -111,25 +111,25 @@ func handle(id int, c *net.TCPConn) {
 	var line int
 	var err error
 
-	var sendch = make(chan []byte, 10)
+	// var sendch = make(chan []byte, 10)
 
-	for i := 0; i < 10; i++ {
-		go func() {
-			for _ = range sendch {
-				// // var size, err = strconv.Atoi(string(msg[0:5]))
-				// // if err != nil {
-				// // 	log.Fatalln("err strconv.Atoi:", err)
-				// // }
+	// for i := 0; i < 10; i++ {
+	// 	go func() {
+	// 		for _ = range sendch {
+	// 			// // var size, err = strconv.Atoi(string(msg[0:5]))
+	// 			// // if err != nil {
+	// 			// // 	log.Fatalln("err strconv.Atoi:", err)
+	// 			// // }
 
-				// fmt.Println("server size:", string(msg[0:5]))
-				// if string(msg[0:5]) == "aaaaa" {
-				// 	log.Fatalln("MESSAGE:", msg)
-				// }
+	// 			// fmt.Println("server size:", string(msg[0:5]))
+	// 			// if string(msg[0:5]) == "aaaaa" {
+	// 			// 	log.Fatalln("MESSAGE:", msg)
+	// 			// }
 
-				// time.Sleep(1 * time.Second)
-			}
-		}()
-	}
+	// 			// time.Sleep(1 * time.Second)
+	// 		}
+	// 	}()
+	// }
 
 	for {
 		// var buf = make([]byte, 5)
@@ -174,7 +174,7 @@ func handle(id int, c *net.TCPConn) {
 		// time.Sleep(1 * time.Second)
 
 		// for range buf {
-		sendch <- b
+		// sendch <- b
 		// }
 
 		// strings.Split(string(buf), "\n")

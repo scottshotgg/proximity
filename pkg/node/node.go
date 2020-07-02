@@ -1,10 +1,14 @@
 package node
 
-import "github.com/scottshotgg/proximity/pkg/listener"
+type Msg struct {
+	Route    string
+	Contents []byte
+}
 
 type Node interface {
-	Close() error
+	// Close() error
 
-	Publish(route string) (chan<- []byte, error)
-	Subscribe(route string) (chan *listener.Msg, string, error)
+	Send(m *Msg)
+	// Subscribe(route string) (chan *listener.Msg, string, error)
+	Join(route string) <-chan *Msg
 }
