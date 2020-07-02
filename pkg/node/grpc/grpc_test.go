@@ -13,27 +13,39 @@ import (
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	grpcNode "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
 func TestP2P(t *testing.T) {
-	var l, err = net.Listen("tcp", ":5001")
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
 	const (
 		mb          = 1024 * 1024
 		everySecond = 1 * time.Second
+
+		key  = "/home/scottshotgg/Development/go/me/proximity/server.key"
+		cert = "/home/scottshotgg/Development/go/me/proximity/server.crt"
 	)
 
 	var (
 		maxMsgSize = 100 * mb
 
-		grpcServer = grpc.NewServer(
-			grpc.MaxSendMsgSize(maxMsgSize),
-			grpc.MaxRecvMsgSize(maxMsgSize),
-		)
+		l, err = net.Listen("tcp", ":5001")
+	)
+
+	if err != nil {
+		log.Fatalf("could not load TLS keys: %s\n", err)
+	}
+
+	// Create the TLS credentials
+	serverCreds, err := credentials.NewServerTLSFromFile(cert, key)
+	if err != nil {
+		log.Fatalf("could not load TLS keys: %s\n", err)
+	}
+
+	var grpcServer = grpc.NewServer(
+		grpc.MaxSendMsgSize(maxMsgSize),
+		grpc.MaxRecvMsgSize(maxMsgSize),
+		grpc.Creds(serverCreds),
 	)
 
 	buffs.RegisterNodeServer(grpcServer, grpcNode.New())
@@ -68,60 +80,71 @@ func TestP2P(t *testing.T) {
 		grpc.MaxCallSendMsgSize(maxMsgSize),
 	)
 
-	var data = []byte{}
+	var data []byte
 	var routes = []string{"a"}
 
-	go func() {
-		conn, err := grpc.Dial(":5001", grpc.WithInsecure(), defaultOps)
-		if err != nil {
-			t.Errorf("%v", err)
-		}
+	// Create the client TLS credentials
+	clientCreds, err := credentials.NewClientTLSFromFile(cert, "localhost")
+	if err != nil {
+		log.Fatalf("could not load tls cert: %s", err)
+	}
 
-		var client = buffs.NewNodeClient(conn)
-
-		pub, err := client.Publish(context.Background())
-		if err != nil {
-			log.Fatalln("err", err)
-		}
-
-		for {
-			err = pub.Send(&buffs.PublishReq{
-				Routes:   routes,
-				Contents: data,
-			})
-
-			if err != nil {
-				t.Errorf("pub %v", err)
-			}
-
-			sendcounter.Incr(1)
-		}
-	}()
-
-	time.Sleep(2000 * time.Millisecond)
-
-	conn2, err := grpc.Dial(":5001", grpc.WithInsecure(), defaultOps)
+	conn, err := grpc.Dial(":5001",
+		defaultOps,
+		grpc.WithTransportCredentials(clientCreds),
+	)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	var client2 = buffs.NewNodeClient(conn2)
+	var client = buffs.NewNodeClient(conn)
 
-	sub2, err := client2.Subscribe(context.Background(), &buffs.SubscribeReq{
-		Topics: []string{"a"},
-	})
-
+	pub, err := client.Publish(context.Background())
 	if err != nil {
-		t.Errorf("err1 %v", err)
+		log.Fatalln("err", err)
 	}
 
 	for {
-		_, err = sub2.Recv()
+		err = pub.Send(&buffs.PublishReq{
+			Routes:   routes,
+			Contents: data,
+		})
+
 		if err != nil {
-			t.Errorf("sub %v", err)
-			t.FailNow()
+			t.Errorf("pub %v", err)
 		}
 
-		counter.Incr(1)
+		sendcounter.Incr(1)
 	}
+
+	// time.Sleep(2000 * time.Millisecond)
+
+	// conn2, err := grpc.Dial(":5001",
+	// 	grpc.WithInsecure(),
+	// 	defaultOps,
+	// 	grpc.WithTransportCredentials(clientCreds),
+	// )
+	// if err != nil {
+	// 	t.Errorf("%v", err)
+	// }
+
+	// var client2 = buffs.NewNodeClient(conn2)
+
+	// sub2, err := client2.Subscribe(context.Background(), &buffs.SubscribeReq{
+	// 	Topics: []string{"a"},
+	// })
+
+	// if err != nil {
+	// 	t.Errorf("err1 %v", err)
+	// }
+
+	// for {
+	// 	_, err = sub2.Recv()
+	// 	if err != nil {
+	// 		t.Errorf("sub %v", err)
+	// 		t.FailNow()
+	// 	}
+
+	// 	counter.Incr(1)
+	// }
 }
