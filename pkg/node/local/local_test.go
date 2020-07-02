@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/paulbellamy/ratecounter"
+	"github.com/scottshotgg/proximity/pkg/node"
 	"github.com/scottshotgg/proximity/pkg/node/local"
 	// "go.uber.org/goleak"
 )
@@ -65,7 +66,7 @@ func sender(l *local.Local) {
 
 	// for ; i < 1000000000; i++ {
 	for {
-		l.Send(&local.Msg{
+		l.Send(&node.Msg{
 			Route: "a",
 		})
 

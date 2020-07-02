@@ -13,7 +13,6 @@ import (
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	grpcNode "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -29,23 +28,23 @@ func TestP2P(t *testing.T) {
 	var (
 		maxMsgSize = 100 * mb
 
-		l, err = net.Listen("tcp", ":5001")
+		l, err = net.Listen("tcp", "localhost:5001")
 	)
 
 	if err != nil {
 		log.Fatalf("could not load TLS keys: %s\n", err)
 	}
 
-	// Create the TLS credentials
-	serverCreds, err := credentials.NewServerTLSFromFile(cert, key)
-	if err != nil {
-		log.Fatalf("could not load TLS keys: %s\n", err)
-	}
+	// // Create the TLS credentials
+	// serverCreds, err := credentials.NewServerTLSFromFile(cert, key)
+	// if err != nil {
+	// 	log.Fatalf("could not load TLS keys: %s\n", err)
+	// }
 
 	var grpcServer = grpc.NewServer(
 		grpc.MaxSendMsgSize(maxMsgSize),
 		grpc.MaxRecvMsgSize(maxMsgSize),
-		grpc.Creds(serverCreds),
+		// grpc.Creds(serverCreds),
 	)
 
 	buffs.RegisterNodeServer(grpcServer, grpcNode.New())
@@ -83,39 +82,44 @@ func TestP2P(t *testing.T) {
 	var data []byte
 	var routes = []string{"a"}
 
-	// Create the client TLS credentials
-	clientCreds, err := credentials.NewClientTLSFromFile(cert, "localhost")
-	if err != nil {
-		log.Fatalf("could not load tls cert: %s", err)
-	}
+	// // Create the client TLS credentials
+	// clientCreds, err := credentials.NewClientTLSFromFile(cert, "")
+	// if err != nil {
+	// 	log.Fatalf("could not load tls cert: %s", err)
+	// }
 
-	conn, err := grpc.Dial(":5001",
-		defaultOps,
-		grpc.WithTransportCredentials(clientCreds),
-	)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
-	var client = buffs.NewNodeClient(conn)
-
-	pub, err := client.Publish(context.Background())
-	if err != nil {
-		log.Fatalln("err", err)
-	}
-
-	for {
-		err = pub.Send(&buffs.PublishReq{
-			Routes:   routes,
-			Contents: data,
-		})
-
+	for i := 0; i < 2; i++ {
+		conn, err := grpc.Dial("localhost:5001",
+			grpc.WithInsecure(),
+			defaultOps,
+			// grpc.WithTransportCredentials(clientCreds),
+		)
 		if err != nil {
-			t.Errorf("pub %v", err)
+			t.Errorf("%v", err)
 		}
 
-		sendcounter.Incr(1)
+		var client = buffs.NewNodeClient(conn)
+
+		pub, err := client.Publish(context.Background())
+		if err != nil {
+			log.Fatalln("err", err)
+		}
+
+		for {
+			err = pub.Send(&buffs.PublishReq{
+				Routes:   routes,
+				Contents: data,
+			})
+
+			if err != nil {
+				t.Errorf("pub %v", err)
+			}
+
+			sendcounter.Incr(1)
+		}
 	}
+
+	time.Sleep(10 * time.Second)
 
 	// time.Sleep(2000 * time.Millisecond)
 
