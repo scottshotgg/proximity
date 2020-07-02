@@ -65,7 +65,7 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		go send(serverAddr)
 	}
 
@@ -80,6 +80,9 @@ const (
 )
 
 func send(serverAddr *net.TCPAddr) {
+
+	// var timer = time.NewTimer(5 * time.Second)
+
 	conn, err := net.DialTCP("tcp", nil, serverAddr)
 	if err != nil {
 		log.Fatalln("err DialTCP:", err)
@@ -98,6 +101,15 @@ func send(serverAddr *net.TCPAddr) {
 	)
 
 	for {
+		// select {
+		// case <-timer.C:
+		// fmt.Println("stopping!")
+		// runtime.GC()
+		// return
+
+		// default:
+		// }
+
 		// Write the delimited messages to the buffer
 		line, err = br.Write(data)
 		if err != nil {

@@ -87,7 +87,7 @@ const (
 )
 
 var (
-	msgChan = make(chan []*node.Msg, 1000)
+	msgChan = make(chan []*node.Msg, 10000)
 )
 
 func handle(id int, c *net.TCPConn) {
@@ -102,14 +102,14 @@ func handle(id int, c *net.TCPConn) {
 		parseChan = make(chan []byte, 100000)
 	)
 
-	// for i := 0; i < 10; i++ {
-	// 	go func() {
-	// 		for range msgChan {
-	// 		}
-	// 	}()
-	// }
-
 	for i := 0; i < 10; i++ {
+		go func() {
+			for range msgChan {
+			}
+		}()
+	}
+
+	for i := 0; i < 2; i++ {
 		go func() {
 			// // - Parse the frame for messages; these are delineated with ':' for now
 			// // - Send to workers
@@ -143,26 +143,58 @@ func handle(id int, c *net.TCPConn) {
 			// 	msgChan <- msgs
 			// }
 
-			for range parseChan {
-				// var split = strings.Split(string(frame), ":")
+			var (
+				splitter  byte = ':'
+				lastIndex int
+			)
+
+			for frame := range parseChan {
+				var msgs []*node.Msg
+
+				for i, f := range frame {
+					if f == splitter {
+						msgs = append(msgs, &node.Msg{
+							Route:    "a",
+							Contents: frame[lastIndex:i],
+						})
+
+						lastIndex = i + 1
+						// _ = lastIndex
+					}
+				}
+
+				msgChan <- msgs
+
+				lastIndex = 0
 			}
 		}()
 	}
 
 	// var r, w = io.Pipe()
 
-	// go func() {
-	// 	var msgReader = bufio.NewReader(r)
+	// for i := 0; i < 10; i++ {
+	// 	go func() {
+	// 		var msgReader = bufio.NewReader(r)
 
-	// 	for {
-	// 		var b, err = msgReader.ReadBytes(':')
-	// 		if err != nil {
-	// 			log.Fatalln("err msgReader.ReadBytes():", err)
+	// 		for {
+	// 			var msgs []*node.Msg
+
+	// 			for i := 0; i < 1000; i++ {
+	// 				var b, err = msgReader.ReadBytes(':')
+	// 				if err != nil {
+	// 					log.Fatalln("err msgReader.ReadBytes():", err)
+	// 				}
+
+	// 				msgs = append(msgs, &node.Msg{
+	// 					Route:    "",
+	// 					Contents: b,
+	// 				})
+	// 			}
+
+	// 			msgChan <- msgs
 	// 		}
-
-	// 		parseChan <- b
-	// 	}
-	// }()
+	// 	}()
+	// }
 
 	// var brw = bufio.NewWriter(w)
 
