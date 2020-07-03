@@ -21,15 +21,15 @@ var count int64
 var total int64
 var totalBytes int64
 
-func Start() {
+func Start(addr string) {
 	var e = events.New()
 
-	addr, err := net.ResolveTCPAddr("tcp", ":9090")
+	address, err := net.ResolveTCPAddr("tcp", addr+":9090")
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
 
-	conn, err := net.ListenTCP("tcp", addr)
+	conn, err := net.ListenTCP("tcp", address)
 	if err != nil {
 		log.Fatalln("err ListenTCP:", err)
 	}
@@ -124,14 +124,14 @@ func recver(id int, e *events.Eventer, br *bufio.ReadWriter) {
 func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	// This channel amount gives a considerable increase
 	// We can always make it variable at run time based on memory size
-	var parseChan = make(chan []byte, 100000)
+	var parseChan = make(chan []byte, 100)
 
-	for i := 0; i < 10; i++ {
-		go func() {
-			for range msgChan {
-			}
-		}()
-	}
+	// for i := 0; i < 10; i++ {
+	go func() {
+		for range msgChan {
+		}
+	}()
+	// }
 
 	for i := 0; i < 2; i++ {
 		go func() {

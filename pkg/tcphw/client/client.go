@@ -21,7 +21,7 @@ var total int64
 var totalBytes int64
 
 func Start(addr string) {
-	serverAddr, err := net.ResolveTCPAddr("tcp", addr)
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
