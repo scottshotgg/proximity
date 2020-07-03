@@ -34,6 +34,8 @@ func Start(addr string) {
 		log.Fatalln("err ListenTCP:", err)
 	}
 
+	fmt.Println("Serving on:", addr+":9090")
+
 	var sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
 
