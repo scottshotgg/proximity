@@ -8,6 +8,6 @@ import (
 )
 
 func Test_HW(t *testing.T) {
-	go server.Start()
-	client.Start("localhost:9090")
+	go server.Start("localhost")
+	client.Start("localhost")
 }

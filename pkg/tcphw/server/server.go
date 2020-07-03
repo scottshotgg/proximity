@@ -124,7 +124,7 @@ func recver(id int, e *events.Eventer, br *bufio.ReadWriter) {
 func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	// This channel amount gives a considerable increase
 	// We can always make it variable at run time based on memory size
-	var parseChan = make(chan []byte, 100)
+	var parseChan = make(chan []byte, 10000)
 
 	// for i := 0; i < 10; i++ {
 	go func() {
