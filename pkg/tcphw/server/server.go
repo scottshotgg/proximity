@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inhies/go-bytesize"
+	"github.com/scottshotgg/proximity/pkg/events"
 	"github.com/scottshotgg/proximity/pkg/node"
 )
 
@@ -21,6 +22,8 @@ var total int64
 var totalBytes int64
 
 func Start() {
+	var e = events.New()
+
 	addr, err := net.ResolveTCPAddr("tcp", ":9090")
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
@@ -74,7 +77,7 @@ func Start() {
 			log.Fatalln("err AcceptTCP:", err)
 		}
 
-		go handle(j, c)
+		go handle(j, e, c)
 		j++
 	}
 }
@@ -90,17 +93,38 @@ var (
 	msgChan = make(chan []*node.Msg, 10000)
 )
 
-func handle(id int, c *net.TCPConn) {
+func handle(id int, e *events.Eventer, c *net.TCPConn) {
+	// e.Listen()
+
 	// Set the TCP window to 64KB
 	c.SetReadBuffer(amount)
+	c.SetWriteBuffer(amount)
 
-	var (
-		br = bufio.NewReader(c)
+	var br = bufio.NewReadWriter(bufio.NewReader(c), bufio.NewWriter(c))
+	var b, err = br.ReadByte()
+	if err != nil {
+		log.Fatalln("err br.ReadByte():", err)
+	}
 
-		// This channel amount gives a considerable increase
-		// We can always make it variable at run time based on memory size
-		parseChan = make(chan []byte, 100000)
-	)
+	switch b {
+	// sender
+	case '1':
+		sender(id, e, br)
+
+	// recvr
+	case '2':
+		recver(id, e, br)
+	}
+}
+
+func recver(id int, e *events.Eventer, br *bufio.ReadWriter) {
+
+}
+
+func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
+	// This channel amount gives a considerable increase
+	// We can always make it variable at run time based on memory size
+	var parseChan = make(chan []byte, 100000)
 
 	for i := 0; i < 10; i++ {
 		go func() {

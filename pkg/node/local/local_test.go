@@ -38,7 +38,7 @@ func TestP2P(t *testing.T) {
 	// go recver(l)
 	time.Sleep(100 * time.Millisecond)
 
-	for i := 0; i < 5000000; i++ {
+	for i := 0; i < 500000; i++ {
 		go sender(l)
 	}
 

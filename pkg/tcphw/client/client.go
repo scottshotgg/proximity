@@ -90,11 +90,21 @@ func send(serverAddr *net.TCPAddr) {
 
 	// Set the TCP window to 64KB
 	conn.SetWriteBuffer(amount)
+	conn.SetReadBuffer(amount)
 
 	var (
 		line int
 
-		br   = bufio.NewWriter(conn)
+		br = bufio.NewWriter(conn)
+	)
+
+	// Sender
+	err = br.WriteByte('1')
+	if err != nil {
+		log.Fatalln("br.WriteByte():", err)
+	}
+
+	var (
 		a    = strings.Repeat("a", 1) + ":"
 		d    = strings.Repeat(a, KB-1)
 		data = append([]byte(d), '\n')
