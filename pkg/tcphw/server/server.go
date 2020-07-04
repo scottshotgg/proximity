@@ -214,16 +214,16 @@ func sender(id int, e *events.Eventer, c net.Conn) {
 	// 	}()
 	// }
 
-	// var brw = bufio.NewReader(c)
+	var brw = bufio.NewReader(c)
 
-	var b = make([]byte, 64*KB)
-	var line int
-	var err error
+	// var b = make([]byte, 64*KB)
+	// var line int
+	// var err error
 
 	for {
 		// Read in a 'frame' of messages; these are delineated by newlines
-		// b, err := brw.ReadBytes('\n')
-		line, err = c.Read(b)
+		b, err := brw.ReadBytes('\n')
+		// line, err = c.Read(b)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -237,8 +237,8 @@ func sender(id int, e *events.Eventer, c net.Conn) {
 		// Send to parsers
 		parseChan <- b
 
-		// atomic.AddInt64(&countBytes, int64(len(b)))
-		atomic.AddInt64(&countBytes, int64(line))
+		atomic.AddInt64(&countBytes, int64(len(b)))
+		// atomic.AddInt64(&countBytes, int64(line))
 		atomic.AddInt64(&count, 1)
 	}
 }

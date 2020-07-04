@@ -65,7 +65,7 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 50; i++ {
 		go send(serverAddr)
 	}
 
@@ -130,13 +130,13 @@ func send(serverAddr *net.TCPAddr) {
 		// size = 2000
 
 		// Optimal Benchmark:
-		size = 4000
+		// size = 4000
 
 		// Huge:
 		// size = 10000
 
 		// Biggest (64KB):
-		// size = 65534
+		size = 65533
 
 		d    = []byte(strings.Repeat("a", size))
 		data = append(d, ':', '\n')
@@ -153,6 +153,7 @@ func send(serverAddr *net.TCPAddr) {
 		// }
 
 		// Write the delimited messages to the buffer
+		// line, err = conn.Write(data)
 		line, err = br.Write(data)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
