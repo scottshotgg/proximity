@@ -90,7 +90,7 @@ func sender(l *local.Local) {
 }
 
 func recver(l *local.Local) {
-	var ch = l.Join("a")
+	var ch = l.Listen("a")
 
 	for {
 		// select {

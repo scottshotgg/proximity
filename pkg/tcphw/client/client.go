@@ -105,10 +105,41 @@ func send(serverAddr *net.TCPAddr) {
 	}
 
 	var (
-		// a    = strings.Repeat("a", 1) + ":"
-		a = strings.Repeat("a", 1022) + ":"
-		// d    = strings.Repeat(a, 511)
-		data = append([]byte(a), '\n')
+		// Smallest:
+		// size = 1
+
+		// Tiny:
+		// size = 5
+
+		// Smaller:
+		// size = 10
+
+		// Small:
+		// size = 100
+
+		// Medium:
+		// size = 400
+
+		// Below average TCP:
+		// size = 1000
+
+		// Average TCP:
+		// size = 1500
+
+		// Above average TCP:
+		// size = 2000
+
+		// Optimal Benchmark:
+		size = 4000
+
+		// Huge:
+		// size = 10000
+
+		// Biggest (64KB):
+		// size = 65534
+
+		d    = []byte(strings.Repeat("a", size))
+		data = append(d, ':', '\n')
 	)
 
 	for {

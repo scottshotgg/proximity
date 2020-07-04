@@ -119,15 +119,64 @@ func handle(id int, e *events.Eventer, c *net.TCPConn) {
 	}
 }
 
+// This channel amount gives a considerable increase
+// We can always make it variable at run time based on memory size
+var parseChan = make(chan []byte, 10000)
+
 func recver(id int, e *events.Eventer, br *bufio.ReadWriter) {
 
 }
 
-func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
-	// This channel amount gives a considerable increase
-	// We can always make it variable at run time based on memory size
-	var parseChan = make(chan []byte, 10000)
+func worker1() {
+	var (
+		splitter byte = ':'
+		//
+		lastIndex int
+	)
 
+	for frame := range parseChan {
+		var msgs []*node.Msg
+
+		for i, f := range frame {
+			if f == splitter {
+				msgs = append(msgs, &node.Msg{
+					Route:    "a",
+					Contents: frame[lastIndex:i],
+				})
+
+				lastIndex = i + 1
+			}
+		}
+
+		msgChan <- msgs
+
+		lastIndex = 0
+	}
+}
+
+func worker2() {
+	// go func() {
+	// 	var splitters = []byte{':'}
+
+	// 	for frame := range parseChan {
+	// 		var (
+	// 			a    = bytes.Split(frame, splitters)
+	// 			msgs []*node.Msg
+	// 		)
+
+	// 		for _, msg := range a {
+	// 			msgs = append(msgs, &node.Msg{
+	// 				Route:    "a",
+	// 				Contents: msg,
+	// 			})
+	// 		}
+
+	// 		msgChan <- msgs
+	// 	}
+	// }()
+}
+
+func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	for i := 0; i < 2; i++ {
 		go func() {
 			for range msgChan {
@@ -136,32 +185,7 @@ func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	}
 
 	for i := 0; i < 2; i++ {
-		go func() {
-			var (
-				splitter  byte = ':'
-				lastIndex int
-			)
-
-			for frame := range parseChan {
-				var msgs []*node.Msg
-
-				for i, f := range frame {
-					if f == splitter {
-						msgs = append(msgs, &node.Msg{
-							Route:    "a",
-							Contents: frame[lastIndex:i],
-						})
-
-						lastIndex = i + 1
-						// _ = lastIndex
-					}
-				}
-
-				msgChan <- msgs
-
-				lastIndex = 0
-			}
-		}()
+		go worker1()
 	}
 
 	// var r, w = io.Pipe()
