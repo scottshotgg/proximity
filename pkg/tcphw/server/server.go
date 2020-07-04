@@ -111,7 +111,7 @@ func handle(id int, e *events.Eventer, c *net.TCPConn) {
 	switch b {
 	// sender
 	case '1':
-		sender(id, e, br)
+		sender(id, e, c)
 
 	// recvr
 	case '2':
@@ -176,7 +176,7 @@ func worker2() {
 	// }()
 }
 
-func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
+func sender(id int, e *events.Eventer, c net.Conn) {
 	for i := 0; i < 2; i++ {
 		go func() {
 			for range msgChan {
@@ -214,11 +214,16 @@ func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	// 	}()
 	// }
 
-	// var brw = bufio.NewWriter(w)
+	// var brw = bufio.NewReader(c)
+
+	var b = make([]byte, 64*KB)
+	var line int
+	var err error
 
 	for {
 		// Read in a 'frame' of messages; these are delineated by newlines
-		b, err := br.ReadBytes('\n')
+		// b, err := brw.ReadBytes('\n')
+		line, err = c.Read(b)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -232,7 +237,8 @@ func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 		// Send to parsers
 		parseChan <- b
 
-		atomic.AddInt64(&countBytes, int64(len(b)))
+		// atomic.AddInt64(&countBytes, int64(len(b)))
+		atomic.AddInt64(&countBytes, int64(line))
 		atomic.AddInt64(&count, 1)
 	}
 }
