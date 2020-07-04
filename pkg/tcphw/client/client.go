@@ -21,11 +21,6 @@ var total int64
 var totalBytes int64
 
 func Start(addr string) {
-	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
-	if err != nil {
-		log.Fatalln("err ResolveTCPAddr:", err)
-	}
-
 	var sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
 
@@ -65,8 +60,8 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 50; i++ {
-		go send(serverAddr)
+	for i := 0; i < 64; i++ {
+		go send(addr)
 	}
 
 	wg.Wait()
@@ -76,10 +71,14 @@ const (
 	B  = 1
 	KB = 1024 * B
 
-	amount = 64 * KB
+	amount = 131072
 )
 
-func send(serverAddr *net.TCPAddr) {
+func send(addr string) {
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
+	if err != nil {
+		log.Fatalln("err ResolveTCPAddr:", err)
+	}
 
 	// var timer = time.NewTimer(5 * time.Second)
 
@@ -130,13 +129,13 @@ func send(serverAddr *net.TCPAddr) {
 		// size = 2000
 
 		// Optimal Benchmark:
-		// size = 4000
+		size = 4000
 
 		// Huge:
 		// size = 10000
 
 		// Biggest (64KB):
-		size = 65533
+		// size = 65533
 
 		d    = []byte(strings.Repeat("a", size))
 		data = append(d, ':', '\n')
@@ -153,7 +152,7 @@ func send(serverAddr *net.TCPAddr) {
 		// }
 
 		// Write the delimited messages to the buffer
-		// line, err = conn.Write(data)
+		// line, err = conn.Wr9ite(data)
 		line, err = br.Write(data)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
