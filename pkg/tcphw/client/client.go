@@ -20,7 +20,7 @@ var count int64
 var total int64
 var totalBytes int64
 
-func Start(addr string) {
+func Start(addr string, times int) {
 	var sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
 
@@ -60,7 +60,7 @@ func Start(addr string) {
 
 	wg.Add(1)
 
-	for i := 0; i < 64; i++ {
+	for i := 0; i < times; i++ {
 		go send(addr)
 	}
 
@@ -114,7 +114,7 @@ func send(addr string) {
 		// size = 10
 
 		// Small:
-		// size = 100
+		size = 100
 
 		// Medium:
 		// size = 400
@@ -129,7 +129,7 @@ func send(addr string) {
 		// size = 2000
 
 		// Optimal Benchmark:
-		size = 4000
+		// size = 4000
 
 		// Huge:
 		// size = 10000

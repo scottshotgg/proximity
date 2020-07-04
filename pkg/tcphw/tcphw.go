@@ -29,9 +29,7 @@ func main() {
 		if *serverFlag == true {
 			go server.Start(addr)
 		} else {
-			for i := 0; i < *timesFlag; i++ {
-				go client.Start(addr)
-			}
+			go client.Start(addr, *timesFlag)
 		}
 	}
 
