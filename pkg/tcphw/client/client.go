@@ -105,9 +105,10 @@ func send(serverAddr *net.TCPAddr) {
 	}
 
 	var (
-		a    = strings.Repeat("a", 1) + ":"
-		d    = strings.Repeat(a, KB-1)
-		data = append([]byte(d), '\n')
+		// a    = strings.Repeat("a", 1) + ":"
+		a = strings.Repeat("a", 1022) + ":"
+		// d    = strings.Repeat(a, 511)
+		data = append([]byte(a), '\n')
 	)
 
 	for {

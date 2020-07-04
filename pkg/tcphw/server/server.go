@@ -92,7 +92,7 @@ const (
 )
 
 var (
-	msgChan = make(chan []*node.Msg, 10000)
+	msgChan = make(chan []*node.Msg, 1000)
 )
 
 func handle(id int, e *events.Eventer, c *net.TCPConn) {
@@ -128,47 +128,15 @@ func sender(id int, e *events.Eventer, br *bufio.ReadWriter) {
 	// We can always make it variable at run time based on memory size
 	var parseChan = make(chan []byte, 10000)
 
-	// for i := 0; i < 10; i++ {
-	go func() {
-		for range msgChan {
-		}
-	}()
-	// }
+	for i := 0; i < 2; i++ {
+		go func() {
+			for range msgChan {
+			}
+		}()
+	}
 
 	for i := 0; i < 2; i++ {
 		go func() {
-			// // - Parse the frame for messages; these are delineated with ':' for now
-			// // - Send to workers
-			// // - Update state and send messages
-
-			// // for frame := range sendch {
-			// // fmt.Println(len(strings.Split(string(frame), ":")))
-			// // }
-
-			// // We can definitely make some very simple improvements to
-			// // drastically reduce the allocations here
-			// var delin byte = ':'
-
-			// for frame := range parseChan {
-			// 	var msgs []*node.Msg
-
-			// 	var lastIndex int
-			// 	for i, b := range frame {
-			// 		if b == delin {
-			// 			// - Capture indicies of delineations
-			// 			// - Build Msg array
-			// 			msgs = append(msgs, &node.Msg{
-			// 				Route:    "a",
-			// 				Contents: frame[lastIndex:i],
-			// 			})
-
-			// 			lastIndex = i + 1
-			// 		}
-			// 	}
-
-			// 	msgChan <- msgs
-			// }
-
 			var (
 				splitter  byte = ':'
 				lastIndex int
