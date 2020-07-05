@@ -12,7 +12,7 @@ import (
 func Test_something(t *testing.T) {
 	var (
 		e        = events.New()
-		sendSize = 10
+		sendSize = 100
 		recvSize = 1
 
 		recvCounts = make([]int64, recvSize)

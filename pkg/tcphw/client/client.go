@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,53 +13,70 @@ import (
 	"github.com/inhies/go-bytesize"
 )
 
-var countBytes int64
-var count int64
-var total int64
-var totalBytes int64
+type tcpClient struct {
+	countBytes int64
+	count      int64
+	total      int64
+	totalBytes int64
+}
 
-func Start(addr string, times int) {
-	var sigChan = make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
+func New() *tcpClient {
+	return &tcpClient{}
+}
 
-	var start = time.Now()
+func (t *tcpClient) Start(addr string, times int, sender bool) {
+	// var sigChan = make(chan os.Signal)
+	// signal.Notify(sigChan, os.Interrupt)
 
-	go func() {
-		<-sigChan
+	// var start = time.Now()
 
-		totalBytes += countBytes
-		total += count
+	// go func() {
+	// 	<-sigChan
 
-		var (
-			elapsed = time.Now().Sub(start)
-			avg     = float64(totalBytes) / elapsed.Seconds()
-		)
+	// 	totalBytes += countBytes
+	// 	total += count
 
-		fmt.Println("Stats:")
-		fmt.Println("Avg:", bytesize.New(avg))
+	// 	var (
+	// 		elapsed = time.Now().Sub(start)
+	// 		avg     = float64(totalBytes) / elapsed.Seconds()
+	// 	)
 
-		os.Exit(9)
-	}()
+	// 	fmt.Println("Stats:")
+	// 	fmt.Println("Avg:", bytesize.New(avg))
+
+	// 	os.Exit(9)
+	// }()
 
 	var ticker = time.NewTicker(1 * time.Second)
 
 	go func() {
+		var name = "Recv"
+		if sender == true {
+			name = "Send"
+		}
+
 		for range ticker.C {
-			fmt.Printf("Send Count: %v\n", count)
-			fmt.Printf("Send Bytes: %v\n", bytesize.New(float64(countBytes)))
-			totalBytes += countBytes
-			total += count
-			countBytes = 0
-			count = 0
+			fmt.Printf(name+" Count: %v\n", t.count)
+			fmt.Printf(name+" Bytes: %v\n", bytesize.New(float64(t.countBytes)))
+			t.totalBytes += t.countBytes
+			t.total += t.count
+			t.countBytes = 0
+			t.count = 0
 		}
 	}()
 
 	var wg = &sync.WaitGroup{}
 
+	var fn = t.recv
+
+	if sender == true {
+		fn = t.send
+	}
+
 	wg.Add(1)
 
 	for i := 0; i < times; i++ {
-		go send(addr)
+		go fn(addr)
 	}
 
 	wg.Wait()
@@ -74,7 +89,7 @@ const (
 	amount = 131072
 )
 
-func send(addr string) {
+func (t *tcpClient) send(addr string) {
 	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
@@ -94,13 +109,18 @@ func send(addr string) {
 	var (
 		line int
 
-		br = bufio.NewWriter(conn)
+		brw = bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	)
 
 	// Sender
-	err = br.WriteByte('1')
+	err = brw.WriteByte('1')
 	if err != nil {
 		log.Fatalln("br.WriteByte():", err)
+	}
+
+	err = brw.Flush()
+	if err != nil {
+		log.Fatalln("err brw.Flush():", err)
 	}
 
 	var (
@@ -139,7 +159,13 @@ func send(addr string) {
 
 		d    = []byte(strings.Repeat("a", size))
 		data = append(d, ':', '\n')
+	// reader = bufio.NewReader(os.Stdin)
 	)
+
+	// input, err := reader.ReadBytes('\n')
+	// if err != nil {
+	// 	log.Fatalln("err reader.ReadBytes():", err)
+	// }
 
 	for {
 		// select {
@@ -151,19 +177,83 @@ func send(addr string) {
 		// default:
 		// }
 
+		// time.Sleep(1 * time.Second)
+
 		// Write the delimited messages to the buffer
-		// line, err = conn.Wr9ite(data)
-		line, err = br.Write(data)
+		// line, err = conn.Write(data)
+		line, err = brw.Write(data)
 		if err != nil {
 			log.Fatalln("err fmt.Fprintf:", err)
 		}
 
-		// Check if the amount sent is the same as the length of the data
-		if line != len(data) {
-			log.Fatalln("wtf dude", line, len(data))
+		err = brw.Flush()
+		if err != nil {
+			log.Fatalln("err brw.Flush():", err)
 		}
 
-		atomic.AddInt64(&countBytes, int64(line))
-		atomic.AddInt64(&count, 1)
+		// err = conn.Close()
+		// if err != nil {
+		// 	log.Fatalln("err conn.Close():", err)
+		// }
+
+		// // Check if the amount sent is the same as the length of the data
+		// if line != len(data) {
+		// 	log.Fatalln("wtf dude", line, len(data))
+		// }
+
+		atomic.AddInt64(&t.countBytes, int64(line))
+		atomic.AddInt64(&t.count, 1)
+	}
+}
+
+func (t *tcpClient) recv(addr string) {
+
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
+	if err != nil {
+		log.Fatalln("err ResolveTCPAddr:", err)
+	}
+
+	// var timer = time.NewTimer(5 * time.Second)
+
+	conn, err := net.DialTCP("tcp", nil, serverAddr)
+	if err != nil {
+		log.Fatalln("err DialTCP:", err)
+	}
+
+	// Set the TCP window to 64KB
+	conn.SetWriteBuffer(amount)
+	conn.SetReadBuffer(amount)
+
+	var (
+		brw = bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	)
+
+	// Sender
+	err = brw.WriteByte('2')
+	if err != nil {
+		log.Fatalln("br.WriteByte():", err)
+	}
+
+	err = brw.Flush()
+	if err != nil {
+		log.Fatalln("err brw.Flush():", err)
+	}
+
+	var (
+		data []byte
+	)
+
+	for {
+		// Write the delimited messages to the buffer
+		// line, err = conn.Write(data)
+		data, err = brw.ReadBytes('\n')
+		if err != nil {
+			log.Fatalln("err fmt.Fprintf:", err)
+		}
+
+		// fmt.Println("data:", string(data))
+
+		atomic.AddInt64(&t.countBytes, int64(len(data)))
+		atomic.AddInt64(&t.count, 1)
 	}
 }

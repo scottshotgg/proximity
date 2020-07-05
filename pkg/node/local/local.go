@@ -62,7 +62,7 @@ func New() *Local {
 	return l
 }
 
-func (l *Local) Join(route string) <-chan *node.Msg {
+func (l *Local) Listen(route string) <-chan *node.Msg {
 	var ch = make(chan *node.Msg, chanSize)
 
 	l.joiners <- &Joiner{

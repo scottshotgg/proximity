@@ -22,14 +22,16 @@ func main() {
 
 	var addrSplit = strings.Split(*addrFlag, ",")
 
+	var n = server.New()
+
 	var wg = &sync.WaitGroup{}
 	wg.Add(*timesFlag)
 
 	for _, addr := range addrSplit {
 		if *serverFlag == true {
-			go server.Start(addr)
+			go n.Start(addr)
 		} else {
-			go client.Start(addr, *timesFlag)
+			go client.New().Start(addr, *timesFlag, true)
 		}
 	}
 

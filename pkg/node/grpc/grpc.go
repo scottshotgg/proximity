@@ -46,7 +46,7 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 
 func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeServer) error {
 	// Subscribe to the route
-	var ch = g.n.Join(req.GetTopics()[0])
+	var ch = g.n.Listen(req.GetTopics()[0])
 
 	var err = srv.SendHeader(metadata.New(map[string]string{
 		"id": "id",
