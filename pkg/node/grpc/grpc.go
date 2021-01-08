@@ -39,8 +39,6 @@ func (g *grpcNode) Publish(srv buffs.Node_PublishServer) error {
 			Route:    req.GetRoutes()[0],
 			Contents: req.GetContents(),
 		}
-
-		// g.n.Send()
 	}
 }
 
@@ -49,7 +47,7 @@ func (g *grpcNode) Subscribe(req *buffs.SubscribeReq, srv buffs.Node_SubscribeSe
 	var ch = g.n.Listen(req.GetTopics()[0])
 
 	var err = srv.SendHeader(metadata.New(map[string]string{
-		"id": "id",
+		"id": req.GetTopics()[0],
 	}))
 
 	if err != nil {

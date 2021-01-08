@@ -86,11 +86,12 @@ const (
 	B  = 1
 	KB = 1024 * B
 
-	amount = 131072
+	// amount = 131072
+	amount = 64 * KB
 )
 
 func (t *tcpClient) send(addr string) {
-	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
@@ -186,20 +187,20 @@ func (t *tcpClient) send(addr string) {
 			log.Fatalln("err fmt.Fprintf:", err)
 		}
 
-		err = brw.Flush()
-		if err != nil {
-			log.Fatalln("err brw.Flush():", err)
-		}
+		// err = brw.Flush()
+		// if err != nil {
+		// 	log.Fatalln("err brw.Flush():", err)
+		// }
 
 		// err = conn.Close()
 		// if err != nil {
 		// 	log.Fatalln("err conn.Close():", err)
 		// }
 
-		// // Check if the amount sent is the same as the length of the data
-		// if line != len(data) {
-		// 	log.Fatalln("wtf dude", line, len(data))
-		// }
+		// Check if the amount sent is the same as the length of the data
+		if line != len(data) {
+			log.Fatalln("wtf dude", line, len(data))
+		}
 
 		atomic.AddInt64(&t.countBytes, int64(line))
 		atomic.AddInt64(&t.count, 1)
@@ -207,8 +208,7 @@ func (t *tcpClient) send(addr string) {
 }
 
 func (t *tcpClient) recv(addr string) {
-
-	serverAddr, err := net.ResolveTCPAddr("tcp", addr+":9090")
+	serverAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}

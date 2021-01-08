@@ -122,10 +122,12 @@ func (t *tcpNode) handle(id int, e *events.Eventer, c *net.TCPConn) {
 	switch b {
 	// sender
 	case '1':
+		// fmt.Println("sender")
 		t.sender(id, e, c)
 
 	// recvr
 	case '2':
+		// fmt.Println("got a recvr")
 		t.recver(id, e, c)
 
 	default:
@@ -152,16 +154,14 @@ func (t *tcpNode) recver(id int, e *events.Eventer, c net.Conn) {
 		// line, err = c.Read(b)
 		if err != nil {
 			if err == io.EOF {
+				log.Println("server io.EOF")
 				return
 			}
 
 			log.Fatalln("err ReadString:", err)
 		}
 
-		err = brw.Flush()
-		if err != nil {
-			log.Fatalln("err brw.Flush():", err)
-		}
+		// brw.Flush()
 
 		atomic.AddInt64(&countBytes, int64(b))
 		// atomic.AddInt64(&countBytes, int64(line))

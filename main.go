@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/profile"
 	"github.com/scottshotgg/proximity/pkg/buffs"
 	grpc_node "github.com/scottshotgg/proximity/pkg/node/grpc"
 	"google.golang.org/grpc"
@@ -36,7 +35,7 @@ func bToMb(b uint64) uint64 {
 }
 
 func main() {
-	defer profile.Start(profile.GoroutineProfile, profile.ProfilePath("profile.p")).Stop()
+	// defer profile.Start(profile.GoroutineProfile, profile.ProfilePath("profile.p")).Stop()
 
 	// go func() {
 	// 	for {
@@ -124,11 +123,11 @@ func start() error {
 	log.Println("Serving gRPC ...")
 	fmt.Println()
 
-	go func() {
-		time.Sleep(12 * time.Second)
+	// go func() {
+	// 	// time.Sleep(12 * time.Second)
 
-		grpcServer.Stop()
-	}()
+	// 	grpcServer.Stop()
+	// }()
 
 	return grpcServer.Serve(l)
 }

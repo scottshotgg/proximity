@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/scottshotgg/proximity/pkg/tcphw/client"
 	"github.com/scottshotgg/proximity/pkg/tcphw/server"
@@ -23,6 +24,8 @@ func main() {
 	var addrSplit = strings.Split(*addrFlag, ",")
 
 	var n = server.New()
+
+	time.Sleep(1 * time.Second)
 
 	var wg = &sync.WaitGroup{}
 	wg.Add(*timesFlag)

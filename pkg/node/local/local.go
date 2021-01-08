@@ -106,9 +106,11 @@ func (l *Local) eventLoop() {
 				l.lock.RUnlock()
 
 				for _, listener := range listeners {
-					// go func(l chan *Msg) {
+					// select {
+					// case :
+					// default:
+					// }
 					listener <- msg
-					// }(listener)
 				}
 			}
 		}
