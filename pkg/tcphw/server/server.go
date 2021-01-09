@@ -137,7 +137,7 @@ func (t *tcpNode) handle(id int, e *events.Eventer, c *net.TCPConn) {
 
 // This channel amount gives a considerable increase
 // We can always make it variable at run time based on memory size
-var parseChan = make(chan []byte, 10000)
+var parseChan = make(chan []byte, 1000000)
 
 func (t *tcpNode) recver(id int, e *events.Eventer, c net.Conn) {
 	var brw = bufio.NewWriter(c)
