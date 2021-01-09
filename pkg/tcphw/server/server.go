@@ -35,7 +35,7 @@ var totalBytes int64
 func (t *tcpNode) Start(addr string) {
 	var e = events.New()
 
-	address, err := net.ResolveTCPAddr("tcp", addr+":9090")
+	address, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
 	}
@@ -45,7 +45,7 @@ func (t *tcpNode) Start(addr string) {
 		log.Fatalln("err ListenTCP:", err)
 	}
 
-	fmt.Println("Serving on:", addr+":9090")
+	fmt.Println("Serving on:", addr)
 
 	var sigChan = make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
@@ -99,7 +99,7 @@ const (
 	B  = 1
 	KB = 1024 * B
 
-	amount = 64 * KB
+	amount = 512 * KB
 )
 
 var (
@@ -174,15 +174,17 @@ func (t *tcpNode) worker1() {
 		splitter byte = ':'
 		//
 		lastIndex int
+
+		st = t.n.Stream()
 	)
 
 	for frame := range parseChan {
 		for i, f := range frame {
 			if f == splitter {
-				t.n.Send(&node.Msg{
+				st <- &node.Msg{
 					Route:    "a",
 					Contents: frame[lastIndex:i],
-				})
+				}
 
 				lastIndex = i + 1
 			}

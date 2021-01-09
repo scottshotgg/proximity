@@ -87,7 +87,7 @@ const (
 	KB = 1024 * B
 
 	// amount = 131072
-	amount = 64 * KB
+	amount = 512 * KB
 )
 
 func (t *tcpClient) send(addr string) {
@@ -135,10 +135,10 @@ func (t *tcpClient) send(addr string) {
 		// size = 10
 
 		// Small:
-		size = 100
+		// size = 100
 
 		// Medium:
-		// size = 400
+		size = 400
 
 		// Below average TCP:
 		// size = 1000
@@ -184,7 +184,7 @@ func (t *tcpClient) send(addr string) {
 		// line, err = conn.Write(data)
 		line, err = brw.Write(data)
 		if err != nil {
-			log.Fatalln("err fmt.Fprintf:", err)
+			log.Fatalln("err brw.Write:", err)
 		}
 
 		// err = brw.Flush()
@@ -248,7 +248,7 @@ func (t *tcpClient) recv(addr string) {
 		// line, err = conn.Write(data)
 		data, err = brw.ReadBytes('\n')
 		if err != nil {
-			log.Fatalln("err fmt.Fprintf:", err)
+			log.Fatalln("err brw.ReadBytes:", err)
 		}
 
 		// fmt.Println("data:", string(data))
