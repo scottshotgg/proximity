@@ -262,7 +262,7 @@ func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
 
 	for {
 		// Read in a 'frame' of messages; these are delineated by newlines
-		_, err := brw.ReadBytes('\n')
+		b, err := brw.ReadBytes('\n')
 		// line, err = c.Read(b)
 		if err != nil {
 			if err == io.EOF {
@@ -274,8 +274,8 @@ func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
 
 		// brw.Write(b)
 
-		// // Send to parsers
-		// parseChan <- b
+		// Send to parsers
+		parseChan <- b
 
 		// atomic.AddInt64(&countBytes, int64(len(b)))
 		// // atomic.AddInt64(&countBytes, int64(line))
