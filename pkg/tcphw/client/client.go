@@ -103,6 +103,8 @@ func (t *tcpClient) send(addr string) {
 		log.Fatalln("err DialTCP:", err)
 	}
 
+	conn.SetNoDelay(true)
+
 	// Set the TCP window to 64KB
 	conn.SetWriteBuffer(amount)
 	conn.SetReadBuffer(amount)
@@ -219,6 +221,8 @@ func (t *tcpClient) recv(addr string) {
 	if err != nil {
 		log.Fatalln("err DialTCP:", err)
 	}
+
+	conn.SetNoDelay(true)
 
 	// Set the TCP window to 64KB
 	conn.SetWriteBuffer(amount)
