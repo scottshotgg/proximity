@@ -275,7 +275,7 @@ func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
 		// brw.Write(b)
 
 		// Send to parsers
-		// parseChan <- b
+		parseChan <- b
 
 		atomic.AddInt64(&countBytes, int64(len(b)))
 		// atomic.AddInt64(&countBytes, int64(line))
