@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  server:
+    build: .
+    command: '/bin/app --server --addrs=:9090'
+    ports:
+      - 9090:9090
+      
+  client:
+    build: .
+    command: '/bin/app --addrs=server:9090'
+    ports:
+      - 9091:9091
