@@ -2,10 +2,10 @@ package client
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -140,7 +140,7 @@ func (t *tcpClient) send(addr string) {
 		// size = 100
 
 		// Medium:
-		size = 400
+		size = 510
 
 		// Below average TCP:
 		// size = 1000
@@ -158,12 +158,14 @@ func (t *tcpClient) send(addr string) {
 		// size = 10000
 
 		// Biggest (64KB):
-		// size = 65533
+		// size = 65534
 
-		d    = []byte(strings.Repeat("a", size))
+		d    = bytes.Repeat([]byte("a"), size)
 		data = append(d, ':', '\n')
 	// reader = bufio.NewReader(os.Stdin)
 	)
+
+	data = bytes.Repeat(data, 128)
 
 	// input, err := reader.ReadBytes('\n')
 	// if err != nil {
