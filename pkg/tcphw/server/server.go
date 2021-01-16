@@ -143,18 +143,11 @@ func (t *tcpNode) recver(id int, e node.Node, c net.Conn) {
 	// var line int
 	// var err error
 
-	for msgs := range ch {
+	for msg := range ch {
 		runtime.Gosched()
-		fmt.Println("hi")
-
-		var bytes = []byte{}
-
-		for _, msg := range msgs {
-			bytes = append(msg.Contents, ':')
-		}
 
 		// Read in a 'frame' of messages; these are delineated by newlines
-		b, err := brw.Write(append(bytes, '\n'))
+		b, err := brw.Write(append(msg.Contents, '\n'))
 		// var b, err = c.Write(append(msg.Contents, '\n'))
 		if err != nil {
 			if err == io.EOF {
@@ -164,6 +157,8 @@ func (t *tcpNode) recver(id int, e node.Node, c net.Conn) {
 
 			log.Fatalln("err ReadString:", err)
 		}
+
+		// brw.Flush()
 
 		atomic.AddInt64(&countBytes, int64(b))
 		// atomic.AddInt64(&countBytes, int64(len(line)))
@@ -180,15 +175,13 @@ func (t *tcpNode) worker1(p <-chan []byte) {
 		st = t.n.Stream()
 	)
 
-	var msgs = []*node.Msg{}
-
 	for frame := range p {
 		// for i, f := range frame {
 		// 	if f == splitter {
-		msgs = append(msgs, &node.Msg{
+		st <- &node.Msg{
 			Route:    "a",
 			Contents: frame,
-		})
+		}
 
 		// lastIndex = i + 1
 		// 	}
@@ -196,8 +189,6 @@ func (t *tcpNode) worker1(p <-chan []byte) {
 
 		// lastIndex = 0
 	}
-
-	st <- msgs
 }
 
 func worker2() {

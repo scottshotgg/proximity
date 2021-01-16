@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"log"
 	"net"
 	"runtime"
@@ -259,7 +258,7 @@ func (t *tcpClient) recv(addr string) {
 			log.Fatalln("err brw.ReadBytes:", err)
 		}
 
-		fmt.Println("data:", string(data))
+		// fmt.Println("data:", string(data))
 
 		atomic.AddInt64(&t.countBytes, int64(len(data)))
 		atomic.AddInt64(&t.count, 1)

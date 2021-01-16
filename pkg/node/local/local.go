@@ -2,7 +2,6 @@ package local
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 type Local struct {
 	// b         bus.Bus
 	// r         recv.Recv
-	listeners map[string][]chan []*node.Msg
+	listeners map[string][]chan *node.Msg
 	// nodes     map[string]struct{}
 	// ctx       context.Context
 	// cancel    context.CancelFunc
@@ -23,14 +22,14 @@ type Local struct {
 	// routes map[string]map[string]chan []byte
 
 	joiners chan *Joiner
-	input   chan []*node.Msg
+	input   chan *node.Msg
 
 	lock *sync.RWMutex
 }
 
 type Joiner struct {
 	Route  string
-	Output chan []*node.Msg
+	Output chan *node.Msg
 }
 
 var (
@@ -45,7 +44,7 @@ func New() *Local {
 	// var b = channel_bus.New(ctx, 1000)
 
 	var l = &Local{
-		listeners: map[string][]chan []*node.Msg{},
+		listeners: map[string][]chan *node.Msg{},
 		// nodes:     map[string]struct{}{},
 
 		// b:      b,
@@ -53,7 +52,7 @@ func New() *Local {
 		// cancel: cancel,
 		// r:      channel_recv.New(ctx, b),
 		lock:  &sync.RWMutex{},
-		input: make(chan []*node.Msg, chanSize),
+		input: make(chan *node.Msg, chanSize),
 
 		joiners: make(chan *Joiner, chanSize),
 	}
@@ -63,8 +62,8 @@ func New() *Local {
 	return l
 }
 
-func (l *Local) Listen(route string) <-chan []*node.Msg {
-	var ch = make(chan []*node.Msg, chanSize)
+func (l *Local) Listen(route string) <-chan *node.Msg {
+	var ch = make(chan *node.Msg, chanSize)
 
 	l.joiners <- &Joiner{
 		Route:  route,
@@ -74,13 +73,13 @@ func (l *Local) Listen(route string) <-chan []*node.Msg {
 	return ch
 }
 
-func (l *Local) Send(m []*node.Msg) error {
+func (l *Local) Send(m *node.Msg) error {
 	l.input <- m
 
 	return nil
 }
 
-func (l *Local) Stream() chan<- []*node.Msg {
+func (l *Local) Stream() chan<- *node.Msg {
 	return l.input
 }
 
@@ -108,10 +107,8 @@ func (l *Local) eventLoop() {
 			// // Process the incoming messages
 			// case msg := <-l.input:
 			// 	l.lock.RLock()
-			var listeners = l.listeners["a"]
+			var listeners = l.listeners[msg.Route]
 			// 	l.lock.RUnlock()
-
-			fmt.Println("listeners:", len(listeners))
 
 			for _, listener := range listeners {
 				// select {
