@@ -2,9 +2,11 @@ package events
 
 import (
 	"errors"
+
+	"github.com/scottshotgg/proximity/pkg/node"
 )
 
-type handler func(msg *Msg) error
+type handler func(msg *node.Msg) error
 
 type Listener struct {
 	id     string
@@ -24,6 +26,6 @@ func NewListener(id string, route string, handle handler) (*Listener, error) {
 	}, nil
 }
 
-func (l *Listener) Handle(msg *Msg) error {
+func (l *Listener) Handle(msg *node.Msg) error {
 	return l.handle(msg)
 }

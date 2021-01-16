@@ -14,6 +14,8 @@ import (
 func main() {
 	var serverFlag = flag.Bool("server", false, "")
 	var addrFlag = flag.String("addrs", "localhost:9090", "")
+	var senderFlag = flag.Bool("sender", false, "")
+	var routeFlag = flag.String("route", "*", "")
 	var timesFlag = flag.Int("times", 1, "")
 
 	flag.Parse()
@@ -34,7 +36,7 @@ func main() {
 		if *serverFlag == true {
 			go n.Start(addr)
 		} else {
-			go client.New().Start(addr, *timesFlag, true)
+			go client.New().Start(addr, *timesFlag, *senderFlag, *routeFlag)
 		}
 	}
 

@@ -3,10 +3,13 @@ package events
 import (
 	"errors"
 	"sync"
+	"time"
+
+	"github.com/scottshotgg/proximity/pkg/node"
 )
 
 type Eventer struct {
-	input     chan []*Msg
+	input     chan []*node.Msg
 	listeners map[string][]*Listener
 	lock      *sync.RWMutex
 	id        string
@@ -16,7 +19,7 @@ type Eventer struct {
 
 func New() *Eventer {
 	var e = &Eventer{
-		input:     make(chan []*Msg, 1000),
+		input:     make(chan []*node.Msg, 1000),
 		listeners: map[string][]*Listener{},
 		lock:      &sync.RWMutex{},
 		// handle:    h,
@@ -52,13 +55,35 @@ func (e *Eventer) workers(amount int) {
 
 var errUnableToRoute = errors.New("unable to resolve route")
 
-func (e *Eventer) SendMulti(m []*Msg) error {
+func (e *Eventer) SendMulti(m []*node.Msg) error {
 	e.input <- m
 
 	return nil
 }
 
-func (e *Eventer) Send(m *Msg) error {
+func (e *Eventer) Stream() chan<- *node.Msg {
+	var ch = make(chan *node.Msg, 1000)
+
+	go func() {
+		var ticker = time.NewTicker(1 * time.Second)
+		var msgs = []*node.Msg{}
+
+		for {
+			select {
+			case <-ticker.C:
+				e.input <- msgs
+				msgs = []*node.Msg{}
+
+			case msg := <-ch:
+				msgs = append(msgs, msg)
+			}
+		}
+	}()
+
+	return ch
+}
+
+func (e *Eventer) Send(m *node.Msg) error {
 	// e.lock.RLock()
 	// var listeners, ok = e.listeners[m.Route]
 	// e.lock.RUnlock()
@@ -74,14 +99,14 @@ func (e *Eventer) Send(m *Msg) error {
 	// 	}
 	// }()
 
-	return e.SendMulti([]*Msg{m})
+	return e.SendMulti([]*node.Msg{m})
 }
 
-func (e *Eventer) Listen(id, route string) chan *Msg {
+func (e *Eventer) Listen(route string) <-chan *node.Msg {
 	var (
-		ch = make(chan *Msg, 100)
+		ch = make(chan *node.Msg, 100)
 
-		h = func(m *Msg) error {
+		h = func(m *node.Msg) error {
 			// go func() {
 			// fmt.Println("sending?")
 			ch <- m
@@ -91,7 +116,7 @@ func (e *Eventer) Listen(id, route string) chan *Msg {
 		}
 
 		l = Listener{
-			id:     id,
+			// id:     id,
 			route:  route,
 			handle: h,
 		}

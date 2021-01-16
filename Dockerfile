@@ -6,8 +6,6 @@ COPY . .
 
 RUN go build -o dist/ pkg/tcphw/tcphw.go
 
-RUN ls
-
 FROM alpine:3.12
 
 COPY --from=builder /app/dist/tcphw /bin/app

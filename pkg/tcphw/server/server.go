@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/inhies/go-bytesize"
-	"github.com/scottshotgg/proximity/pkg/events"
 	"github.com/scottshotgg/proximity/pkg/node"
 	"github.com/scottshotgg/proximity/pkg/node/local"
 )
@@ -25,6 +24,7 @@ type tcpNode struct {
 func New() *tcpNode {
 	return &tcpNode{
 		n: local.New(),
+		// n: events.New(),
 	}
 }
 
@@ -34,8 +34,6 @@ var total int64
 var totalBytes int64
 
 func (t *tcpNode) Start(addr string) {
-	var e = events.New()
-
 	address, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatalln("err ResolveTCPAddr:", err)
@@ -64,8 +62,8 @@ func (t *tcpNode) Start(addr string) {
 			avg     = float64(totalBytes) / elapsed.Seconds()
 		)
 
-		fmt.Println("Stats:")
-		fmt.Println("Avg:", bytesize.New(avg))
+		log.Println("Stats:")
+		log.Println("Avg:", bytesize.New(avg))
 
 		os.Exit(9)
 	}()
@@ -73,9 +71,10 @@ func (t *tcpNode) Start(addr string) {
 	var ticker = time.NewTicker(1 * time.Second)
 
 	go func() {
-		for range ticker.C {
-			fmt.Printf("Count: %v\n", count)
-			fmt.Printf("Bytes: %v\n", bytesize.New(float64(countBytes)))
+		for t := range ticker.C {
+			log.Printf("t: %d", t.Second())
+			log.Printf("Count: %v\n", count)
+			log.Printf("Bytes: %v\n", bytesize.New(float64(countBytes)))
 			totalBytes += countBytes
 			total += count
 			countBytes = 0
@@ -91,7 +90,7 @@ func (t *tcpNode) Start(addr string) {
 			log.Fatalln("err AcceptTCP:", err)
 		}
 
-		go t.handle(j, e, c)
+		go t.handle(j, t.n, c)
 		j++
 	}
 }
@@ -103,11 +102,7 @@ const (
 	amount = 512 * KB
 )
 
-var (
-	msgChan = make(chan []*node.Msg, 1000)
-)
-
-func (t *tcpNode) handle(id int, e *events.Eventer, c *net.TCPConn) {
+func (t *tcpNode) handle(id int, e node.Node, c *net.TCPConn) {
 	// e.Listen()
 
 	// Set the TCP window to 64KB
@@ -138,9 +133,8 @@ func (t *tcpNode) handle(id int, e *events.Eventer, c *net.TCPConn) {
 
 // This channel amount gives a considerable increase
 // We can always make it variable at run time based on memory size
-var parseChan = make(chan []byte, 1000000)
 
-func (t *tcpNode) recver(id int, e *events.Eventer, c net.Conn) {
+func (t *tcpNode) recver(id int, e node.Node, c net.Conn) {
 	var brw = bufio.NewWriter(c)
 
 	var ch = t.n.Listen("a")
@@ -149,10 +143,19 @@ func (t *tcpNode) recver(id int, e *events.Eventer, c net.Conn) {
 	// var line int
 	// var err error
 
-	for msg := range ch {
+	for msgs := range ch {
+		runtime.Gosched()
+		fmt.Println("hi")
+
+		var bytes = []byte{}
+
+		for _, msg := range msgs {
+			bytes = append(msg.Contents, ':')
+		}
+
 		// Read in a 'frame' of messages; these are delineated by newlines
-		b, err := brw.Write(append(msg.Contents, '\n'))
-		// line, err = c.Read(b)
+		b, err := brw.Write(append(bytes, '\n'))
+		// var b, err = c.Write(append(msg.Contents, '\n'))
 		if err != nil {
 			if err == io.EOF {
 				log.Println("server io.EOF")
@@ -162,37 +165,39 @@ func (t *tcpNode) recver(id int, e *events.Eventer, c net.Conn) {
 			log.Fatalln("err ReadString:", err)
 		}
 
-		// brw.Flush()
-
 		atomic.AddInt64(&countBytes, int64(b))
-		// atomic.AddInt64(&countBytes, int64(line))
+		// atomic.AddInt64(&countBytes, int64(len(line)))
 		atomic.AddInt64(&count, 1)
 	}
 }
 
-func (t *tcpNode) worker1() {
+func (t *tcpNode) worker1(p <-chan []byte) {
 	var (
-		splitter byte = ':'
+		// splitter byte = ':'
 		//
-		lastIndex int
+		// lastIndex int
 
 		st = t.n.Stream()
 	)
 
-	for frame := range parseChan {
-		for i, f := range frame {
-			if f == splitter {
-				st <- &node.Msg{
-					Route:    "a",
-					Contents: frame[lastIndex:i],
-				}
+	var msgs = []*node.Msg{}
 
-				lastIndex = i + 1
-			}
-		}
+	for frame := range p {
+		// for i, f := range frame {
+		// 	if f == splitter {
+		msgs = append(msgs, &node.Msg{
+			Route:    "a",
+			Contents: frame,
+		})
 
-		lastIndex = 0
+		// lastIndex = i + 1
+		// 	}
+		// }
+
+		// lastIndex = 0
 	}
+
+	st <- msgs
 }
 
 func worker2() {
@@ -217,20 +222,19 @@ func worker2() {
 	// }()
 }
 
-func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
+func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 	// // for i := 0; i < 2; i++ {
 	// go func() {
 	// 	for range msgChan {
 	// 	}
 	// }()
 	// // }
+	var p = make(chan []byte, 1000)
 
 	// // for i := 0; i < 2; i++ {
-	go t.worker1()
-	go t.worker1()
-	go t.worker1()
-	go t.worker1()
-	// go t.worker1()
+	go t.worker1(p)
+	go t.worker1(p)
+	go t.worker1(p)
 	// go t.worker1()
 	// go t.worker1()
 	// }
@@ -261,17 +265,19 @@ func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
 	// 	}()
 	// }
 
-	// var brw = bufio.NewReader(c)
+	var brw = bufio.NewReader(c)
 
 	// var line int
 	// var err error
 
-	var b = make([]byte, 64*KB)
 	for {
+		var b = make([]byte, 64*KB)
+
 		runtime.Gosched()
+
 		// Read in a 'frame' of messages; these are delineated by newlines
-		// var n, err = c.Read(b)
-		var line, err = c.Read(b)
+		// var line, err = c.Read(b)
+		var line, err = brw.Read(b)
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -283,7 +289,7 @@ func (t *tcpNode) sender(id int, e *events.Eventer, c net.Conn) {
 		// brw.Write(b)
 
 		// // Send to parsers
-		parseChan <- b
+		p <- b
 
 		// atomic.AddInt64(&countBytes, int64(n))
 		atomic.AddInt64(&countBytes, int64(line))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,7 +25,7 @@ func New() *tcpClient {
 	return &tcpClient{}
 }
 
-func (t *tcpClient) Start(addr string, times int, sender bool) {
+func (t *tcpClient) Start(addr string, times int, sender bool, route string) {
 	// var sigChan = make(chan os.Signal)
 	// signal.Notify(sigChan, os.Interrupt)
 
@@ -55,9 +56,10 @@ func (t *tcpClient) Start(addr string, times int, sender bool) {
 			name = "Send"
 		}
 
-		for range ticker.C {
-			fmt.Printf(name+" Count: %v\n", t.count)
-			fmt.Printf(name+" Bytes: %v\n", bytesize.New(float64(t.countBytes)))
+		for tt := range ticker.C {
+			log.Printf("t: %d", tt.Second())
+			log.Printf(name+" Count: %v\n", t.count)
+			log.Printf(name+" Bytes: %v\n", bytesize.New(float64(t.countBytes)))
 			t.totalBytes += t.countBytes
 			t.total += t.count
 			t.countBytes = 0
@@ -173,6 +175,8 @@ func (t *tcpClient) send(addr string) {
 	// }
 
 	for {
+		runtime.Gosched()
+
 		// select {
 		// case <-timer.C:
 		// fmt.Println("stopping!")
@@ -201,10 +205,10 @@ func (t *tcpClient) send(addr string) {
 		// 	log.Fatalln("err conn.Close():", err)
 		// }
 
-		// Check if the amount sent is the same as the length of the data
-		if line != len(data) {
-			log.Fatalln("wtf dude", line, len(data))
-		}
+		// // Check if the amount sent is the same as the length of the data
+		// if line != len(data) {
+		// 	log.Fatalln("wtf dude", line, len(data))
+		// }
 
 		atomic.AddInt64(&t.countBytes, int64(line))
 		atomic.AddInt64(&t.count, 1)
@@ -245,19 +249,17 @@ func (t *tcpClient) recv(addr string) {
 		log.Fatalln("err brw.Flush():", err)
 	}
 
-	var (
-		data []byte
-	)
-
 	for {
+		runtime.Gosched()
+
 		// Write the delimited messages to the buffer
 		// line, err = conn.Write(data)
-		data, err = brw.ReadBytes('\n')
+		var data, err = brw.ReadBytes('\n')
 		if err != nil {
 			log.Fatalln("err brw.ReadBytes:", err)
 		}
 
-		// fmt.Println("data:", string(data))
+		fmt.Println("data:", string(data))
 
 		atomic.AddInt64(&t.countBytes, int64(len(data)))
 		atomic.AddInt64(&t.count, 1)

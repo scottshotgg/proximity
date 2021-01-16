@@ -3,12 +3,19 @@ version: "3"
 services:
   server:
     build: .
-    command: '/bin/app --server --addrs=:9090'
+    command: "/bin/app --server --addrs=:9090"
     ports:
       - 9090:9090
-      
-  client:
+
+  recver:
     build: .
-    command: '/bin/app --addrs=server:9090'
-    ports:
-      - 9091:9091
+    command: "/bin/app --addrs=server:9090"
+    depends_on:
+      - server
+
+  sender:
+    build: .
+    command: "/bin/app --addrs=server:9090 --sender"
+    depends_on:
+      - server
+      - recver
