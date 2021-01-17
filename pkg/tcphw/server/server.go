@@ -222,6 +222,9 @@ func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 	// // }
 	var p = make(chan []byte, 1000)
 
+	defer c.Close()
+	defer close(p)
+
 	// // for i := 0; i < 2; i++ {
 	go t.worker1(p)
 	go t.worker1(p)
@@ -274,7 +277,8 @@ func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 				return
 			}
 
-			log.Fatalln("err ReadString:", err)
+			log.Println("err ReadString:", err)
+			return
 		}
 
 		// brw.Write(b)

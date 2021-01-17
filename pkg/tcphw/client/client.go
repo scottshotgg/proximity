@@ -191,7 +191,8 @@ func (t *tcpClient) send(addr string) {
 		// line, err = conn.Write(data)
 		line, err = brw.Write(data)
 		if err != nil {
-			log.Fatalln("err brw.Write:", err)
+			log.Println("err brw.Write:", err)
+			return
 		}
 
 		// err = brw.Flush()
@@ -255,7 +256,8 @@ func (t *tcpClient) recv(addr string) {
 		// line, err = conn.Write(data)
 		var data, err = brw.ReadBytes('\n')
 		if err != nil {
-			log.Fatalln("err brw.ReadBytes:", err)
+			log.Println("err brw.ReadBytes:", err)
+			return
 		}
 
 		// fmt.Println("data:", string(data))
