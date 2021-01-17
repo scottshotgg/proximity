@@ -155,7 +155,8 @@ func (t *tcpNode) recver(id int, e node.Node, c net.Conn) {
 				return
 			}
 
-			log.Fatalln("err ReadString:", err)
+			log.Println("err ReadString:", err)
+			return
 		}
 
 		// brw.Flush()

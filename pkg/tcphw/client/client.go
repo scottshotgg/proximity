@@ -81,6 +81,8 @@ func (t *tcpClient) Start(addr string, times int, sender bool, route string) {
 	}
 
 	wg.Wait()
+
+	ticker.Stop()
 }
 
 const (
