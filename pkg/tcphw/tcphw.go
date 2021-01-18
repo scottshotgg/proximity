@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,15 @@ func main() {
 		if *serverFlag == true {
 			go n.Start(addr)
 		} else {
-			go client.New().Start(addr, *timesFlag, *senderFlag, *routeFlag)
+			go func() {
+				// TODO: uri here
+				var node, err = client.New()
+				if err != nil {
+					log.Fatalln("err:", err)
+				}
+
+				node.Start(addr, *timesFlag, *senderFlag, *routeFlag)
+			}()
 		}
 	}
 

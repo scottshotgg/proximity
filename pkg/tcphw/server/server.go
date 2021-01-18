@@ -147,7 +147,7 @@ func (t *tcpNode) recver(id int, e node.Node, c net.Conn) {
 		runtime.Gosched()
 
 		// Read in a 'frame' of messages; these are delineated by newlines
-		b, err := brw.Write(append(msg.Contents, '\n'))
+		b, err := brw.Write(msg.Contents)
 		// var b, err = c.Write(append(msg.Contents, '\n'))
 		if err != nil {
 			if err == io.EOF {
@@ -266,12 +266,11 @@ func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 	// var err error
 
 	for {
-		var b = make([]byte, 64*KB)
-
 		runtime.Gosched()
 
 		// Read in a 'frame' of messages; these are delineated by newlines
 		// var line, err = c.Read(b)
+		var b = make([]byte, 64*KB)
 		var line, err = brw.Read(b)
 		if err != nil {
 			if err == io.EOF {
