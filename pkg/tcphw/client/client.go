@@ -168,7 +168,7 @@ func (t *tcpClient) send(addr string) {
 	// reader = bufio.NewReader(os.Stdin)
 	)
 
-	data = bytes.Repeat(data, 128)
+	// data = bytes.Repeat(data, 128)
 
 	// input, err := reader.ReadBytes('\n')
 	// if err != nil {
@@ -263,6 +263,10 @@ func (t *tcpClient) recv(addr string) {
 		}
 
 		// fmt.Println("data:", string(data))
+
+		// if data[len(data)-1] != '\n' {
+		// 	fmt.Println("wtf:", string(data))
+		// }
 
 		atomic.AddInt64(&t.countBytes, int64(len(data)))
 		atomic.AddInt64(&t.count, 1)
