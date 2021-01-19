@@ -33,28 +33,28 @@ type tcpClient struct {
 }
 
 func New() (*tcpClient, error) {
-	var (
-		uri = "redis:6379"
+	// var (
+	// 	uri = "redis:6379"
 
-		// TODO: options
-		client = redis.NewClient(&redis.Options{
-			Addr:            uri,
-			MaxRetries:      3,
-			MinRetryBackoff: 1 * time.Second,
-			MaxRetryBackoff: 10 * time.Second,
-			// Password: "", // no password set
-			// DB:       0,  // use default DB
-		})
+	// 	// TODO: options
+	// 	client = redis.NewClient(&redis.Options{
+	// 		Addr:            uri,
+	// 		MaxRetries:      3,
+	// 		MinRetryBackoff: 1 * time.Second,
+	// 		MaxRetryBackoff: 10 * time.Second,
+	// 		// Password: "", // no password set
+	// 		// DB:       0,  // use default DB
+	// 	})
 
-		err = client.Ping().Err()
-	)
+	// 	err = client.Ping().Err()
+	// )
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return &tcpClient{
-		r: client,
+		// r: client,
 	}, nil
 }
 
