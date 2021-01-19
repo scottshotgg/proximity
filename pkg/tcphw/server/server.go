@@ -272,8 +272,8 @@ func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 
 		// Read in a 'frame' of messages; these are delineated by newlines
 		// var line, err = c.Read(b)
-		var b = make([]byte, 64*KB)
-		var line, err = brw.Read(b)
+		// var b = make([]byte, 64*KB)
+		var line, err = brw.ReadBytes('\n')
 		if err != nil {
 			if err == io.EOF {
 				return
@@ -285,11 +285,13 @@ func (t *tcpNode) sender(id int, e node.Node, c net.Conn) {
 
 		// brw.Write(b)
 
+		// fmt.Println("string(b[:line])", string(b[:line]))
+
 		// // Send to parsers
-		p <- b[:line]
+		p <- line
 
 		// atomic.AddInt64(&countBytes, int64(n))
-		atomic.AddInt64(&countBytes, int64(line))
+		atomic.AddInt64(&countBytes, int64(len(line)))
 		atomic.AddInt64(&count, 1)
 	}
 }

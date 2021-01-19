@@ -7,11 +7,21 @@ services:
     ports:
       - 9090:9090
 
+  redis:
+    image: redis:6.0.5-alpine3.12
+    ports:
+      - 6379:6379
+
   recver:
     build: .
     command: "/bin/app --addrs=server:9090"
     depends_on:
       - server
+    volumes:
+      - ./something:/bin/something:rw
+      # - type: bind
+      #   source: ./something_here.txt
+      #   target: /bin/something_here.txt
 
   sender:
     build: .
@@ -19,3 +29,12 @@ services:
     depends_on:
       - server
       - recver
+  # redis-commander:
+  #   container_name: redis-commander
+  #   hostname: redis-commander
+  #   image: rediscommander/redis-commander:latest
+  #   restart: always
+  #   environment:
+  #     - REDIS_HOSTS=local:redis:6379
+  #   ports:
+  #     - "8081:8081"
